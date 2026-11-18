@@ -51,7 +51,7 @@ export function commentSnippet(
 }
 
 /**
- * What the dashboard can say about traffic: nothing without Umami or a
+ * What the dashboard can say about traffic: nothing without a popularity
  * snapshot; a stale snapshot is still shown, marked expired.
  */
 export function popularityState(

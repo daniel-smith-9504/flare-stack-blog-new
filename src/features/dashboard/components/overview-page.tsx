@@ -278,7 +278,7 @@ function Popular({
   );
 }
 
-/** Why there are no popular Posts: no Umami, no snapshot yet, an expired one, no views. */
+/** Why there are no popular Posts: no snapshot yet, an expired one, no views. */
 function PopularEmpty({
   state,
 }: {

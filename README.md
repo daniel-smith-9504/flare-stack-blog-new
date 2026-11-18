@@ -80,7 +80,7 @@ Flare Stack Blog 是一个深度拥抱 Cloudflare 生态的开源独立博客系
   - **通知推送**：新评论、回复和友链申请可推送到 Telegram、Discord、飞书、钉钉、企业微信、Bark、ntfy，或带签名的通用 JSON 与自定义模板，详见 [Webhook 推送](docs/webhook.md)。
   - **开放 API 接口与 Agent Skill**：支持在后台签发 API Key，通过规范化 OpenAPI / oRPC 接口对接第三方自动化工具或发布脚本；博客自带 Agent Skill，AI agent 凭配对码接入后可撰写、上传图片并发布文章。
   - **版本更新提示**：后台概览按补丁、小版本、大版本提示可用更新，并附各版本的一句话摘要；跨大版本升级时，部署会在迁移数据库之前停下，列出需要先完成的事项。
-  - **访问分析与 SEO**：内建 Umami 统计与文章热度自动同步，开箱支持 Canonical、Schema.org、RSS / Atom / JSON Feed、Sitemap 与 Robots 标准。
+  - **访问分析与 SEO**：内建站内访问统计（PV / UV、来源、地区、设备）与文章热度自动同步，无需任何第三方统计服务，开箱支持 Canonical、Schema.org、RSS / Atom / JSON Feed、Sitemap 与 Robots 标准。
 
 ## 技术栈
 

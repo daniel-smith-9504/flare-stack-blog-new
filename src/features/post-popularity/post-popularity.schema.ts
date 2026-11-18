@@ -17,8 +17,8 @@ export const PostPopularitySnapshotSchema = z.object({
   windowEnd: z.number().int().nonnegative(),
   syncedAt: z.number().int().nonnegative(),
   /**
-   * Site-wide views per UTC day of the window, oldest first; empty when Umami
-   * could not say, and in snapshots written before this field existed.
+   * Site-wide views per UTC day of the window, oldest first; empty in
+   * snapshots written before this field existed.
    */
   daily: z.array(PostPopularityDailyViewsSchema).default([]),
 });

@@ -42,6 +42,9 @@ export const router = {
   dashboard: lazy(() => import("@/features/dashboard/server/router"), {
     prefix: "/admin/dashboard",
   }),
+  analytics: lazy(() => import("@/features/analytics/server/router"), {
+    prefix: "/admin/analytics",
+  }),
   cache: lazy(() => import("@/features/cache/server/router"), {
     prefix: "/admin/cache",
   }),

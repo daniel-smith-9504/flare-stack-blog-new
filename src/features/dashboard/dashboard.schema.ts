@@ -77,7 +77,7 @@ const DashboardPopularitySchema = z.object({
   topPosts: z.array(DashboardTopPostSchema),
   /**
    * Site-wide views per UTC day of the snapshot's window, oldest first; empty
-   * when unknown (no snapshot, or Umami gave no daily series).
+   * when the snapshot carries no daily series.
    */
   daily: z.array(DashboardDailyViewsSchema),
 });

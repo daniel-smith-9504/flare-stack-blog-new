@@ -11,7 +11,7 @@ import {
 } from "./dashboard";
 
 describe("popularityAlertFromStatus", () => {
-  it("hides when Umami is not configured", () => {
+  it("hides when there is no traffic source", () => {
     expect(
       popularityAlertFromStatus({
         configured: false,
@@ -36,7 +36,7 @@ describe("popularityAlertFromStatus", () => {
       popularityAlertFromStatus({
         configured: true,
         expired: true,
-        lastError: "umami 502",
+        lastError: "page_views 502",
       }),
     ).toBe("failed");
   });
@@ -131,7 +131,7 @@ describe("commentSnippet", () => {
 });
 
 describe("popularityState", () => {
-  it("says nothing without Umami, even with an old snapshot", () => {
+  it("says nothing without a traffic source, even with an old snapshot", () => {
     expect(popularityState({ configured: false, expired: false }, true)).toBe(
       "unconfigured",
     );

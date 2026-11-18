@@ -14,12 +14,6 @@ const serverEnvSchema = z.object({
   GITHUB_CLIENT_SECRET: z.string(),
   DOMAIN: domainSchema,
   ENVIRONMENT: z.enum(["dev", "prod", "test"]).optional(),
-  UMAMI_WEBSITE_ID: z.string().optional(),
-  UMAMI_SRC: z.string().optional(),
-  UMAMI_API_URL: z.string().optional(),
-  UMAMI_API_KEY: z.string().optional(),
-  UMAMI_USERNAME: z.string().optional(),
-  UMAMI_PASSWORD: z.string().optional(),
   TURNSTILE_SECRET_KEY: z.string().optional(),
   // Checked where it is used: a value that is not https is ignored there.
   UPDATE_SOURCE_URL: z.string().optional(),

@@ -718,7 +718,7 @@ describe("Dashboard overview", () => {
     expect(overview.popularity.daily).toEqual([]);
   });
 
-  it("reports no traffic without Umami or a snapshot", async () => {
+  it("reports no traffic without a snapshot", async () => {
     mockPopularity(popularityStatus({ configured: false }), null);
     let overview = await getDashboardOverview(adminContext);
     expect(overview.popularity).toEqual({
@@ -778,7 +778,7 @@ describe("Dashboard overview", () => {
 
   it("surfaces a failed popularity sync", async () => {
     mockPopularity(
-      popularityStatus({ lastSuccessAt: null, lastError: "umami 502" }),
+      popularityStatus({ lastSuccessAt: null, lastError: "page_views 502" }),
       null,
     );
 

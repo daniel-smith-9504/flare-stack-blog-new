@@ -9,12 +9,6 @@ describe("post popularity service", () => {
     const invalidate = vi.fn(async () => undefined);
     const service = createPostPopularityService({
       now: () => new Date("2026-08-23T00:15:00.000Z"),
-      resolveConfig: vi.fn(() => ({
-        auth: "api-key" as const,
-        apiUrl: "https://api.umami.is/v1",
-        websiteId: "website-id",
-        apiKey: "cloud-key",
-      })),
       getPathMetrics: vi.fn(async () => [
         { path: "/post/alpha", pageviews: 4 },
       ]),
@@ -68,12 +62,6 @@ describe("post popularity service", () => {
       .mockImplementation(() => undefined);
     const service = createPostPopularityService({
       now: () => new Date("2026-08-23T00:15:00.000Z"),
-      resolveConfig: vi.fn(() => ({
-        auth: "api-key" as const,
-        apiUrl: "https://api.umami.is/v1",
-        websiteId: "website-id",
-        apiKey: "cloud-key",
-      })),
       getPathMetrics: vi.fn(async () => [
         { path: "/post/alpha", pageviews: 4 },
       ]),
@@ -151,12 +139,6 @@ describe("post popularity service", () => {
       const writeSnapshot = vi.fn(async () => undefined);
       const service = createPostPopularityService({
         now: () => new Date("2026-08-23T00:15:00.000Z"),
-        resolveConfig: vi.fn(() => ({
-          auth: "api-key" as const,
-          apiUrl: "https://api.umami.is/v1",
-          websiteId: "website-id",
-          apiKey: "cloud-key",
-        })),
         getPathMetrics: vi.fn(async () => [{ path: "/post/alpha", pageviews }]),
         getDailyViews: vi.fn(async () => []),
         listPublishedPosts: vi.fn(async () => [
@@ -217,11 +199,10 @@ describe("post popularity service", () => {
     const writeStatus = vi.fn(async () => undefined);
     const service = createPostPopularityService({
       now: () => new Date("2026-08-23T00:15:00.000Z"),
-      resolveConfig: vi.fn(() => {
-        throw new Error("Umami API credentials are not configured");
+      getPathMetrics: vi.fn(async () => {
+        throw new Error("page_views unavailable");
       }),
-      getPathMetrics: vi.fn(),
-      getDailyViews: vi.fn(),
+      getDailyViews: vi.fn(async () => []),
       listPublishedPosts: vi.fn(),
       readSnapshot: vi.fn(async () => null),
       writeSnapshot: vi.fn(),
@@ -246,7 +227,7 @@ describe("post popularity service", () => {
     expect(writeStatus).toHaveBeenCalledWith(expect.anything(), {
       lastAttemptAt: Date.parse("2026-08-23T00:15:00.000Z"),
       lastSuccessAt: Date.parse("2026-08-22T00:15:00.000Z"),
-      lastError: "Umami API credentials are not configured",
+      lastError: "page_views unavailable",
       windowStart: Date.parse("2026-07-24T00:00:00.000Z"),
       windowEnd: Date.parse("2026-08-22T23:59:59.999Z"),
     });
@@ -260,7 +241,6 @@ describe("post popularity service", () => {
     const syncedAt = Date.parse("2026-08-22T00:15:00.000Z");
     const service = createPostPopularityService({
       now: () => new Date("2026-08-23T00:15:00.000Z"),
-      resolveConfig: vi.fn(),
       getPathMetrics: vi.fn(),
       getDailyViews: vi.fn(),
       listPublishedPosts: vi.fn(),
@@ -299,7 +279,6 @@ describe("post popularity service", () => {
     const getPopularPosts = vi.fn(async () => []);
     const service = createPostPopularityService({
       now: () => new Date("2026-08-30T00:15:00.001Z"),
-      resolveConfig: vi.fn(),
       getPathMetrics: vi.fn(),
       getDailyViews: vi.fn(),
       listPublishedPosts: vi.fn(),

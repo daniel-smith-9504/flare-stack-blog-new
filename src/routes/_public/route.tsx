@@ -11,11 +11,11 @@ import type { NavOption } from "@/components/layout/layout-props";
 import { customNavOptions } from "@/components/layout/nav-options";
 import { LazyToaster } from "@/components/layout/lazy-toaster";
 import { NameGate } from "@/features/auth/components/name-gate";
+import { PageViewTracker } from "@/features/analytics/components/page-view-tracker";
 import { categoriesQueryOptions } from "@/features/categories/queries";
 import { useLogout } from "@/features/auth/hooks/use-logout";
 import { useSession } from "@/features/auth/hooks/use-session";
 import { CACHE_CONTROL } from "@/lib/constants";
-import { clientEnv } from "@/lib/env/client.env";
 import { useIsAdmin } from "@/features/moments/hooks/use-is-admin";
 import { momentsExistQuery } from "@/features/moments/queries";
 import { tagsQueryOptions } from "@/features/tags/queries";
@@ -62,7 +62,6 @@ export const Route = createFileRoute("/_public")({
     return CACHE_CONTROL.html;
   },
   head: ({ match }) => {
-    const env = clientEnv();
     // Only the selected Theme's stylesheet, so a visitor never downloads the
     // others; in the server-rendered head, so the first paint has it.
     const { theme } = activeTheme(
@@ -71,15 +70,6 @@ export const Route = createFileRoute("/_public")({
     );
     return {
       links: [{ rel: "stylesheet", href: theme.stylesheet }],
-      scripts: env.VITE_UMAMI_WEBSITE_ID
-        ? [
-            {
-              src: "/stats.js",
-              defer: true,
-              "data-website-id": env.VITE_UMAMI_WEBSITE_ID,
-            },
-          ]
-        : [],
     };
   },
 });
@@ -172,6 +162,7 @@ function PublicLayout() {
         <ThemePreviewBar themeName={theme.name()} onExit={exitPreview} />
       ) : null}
       <NameGate user={session?.user} logout={logout} />
+      <PageViewTracker />
       <LazyToaster />
     </>
   );

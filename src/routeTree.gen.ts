@@ -17,7 +17,6 @@ import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as RssDotxmlRouteImport } from './routes/rss[.]xml'
 import { Route as SiteDotwebmanifestRouteImport } from './routes/site[.]webmanifest'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as StatsDotjsRouteImport } from './routes/stats[.]js'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as PublicSplatRouteImport } from './routes/_public/$'
 import { Route as PublicAuthRouteRouteImport } from './routes/_public/_auth/route'
@@ -29,6 +28,7 @@ import { Route as PublicUnsubscribeRouteImport } from './routes/_public/unsubscr
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminSplatRouteImport } from './routes/admin/$'
 import { Route as AdminAccessRouteRouteImport } from './routes/admin/access/route'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
 import { Route as AdminCommentsRouteImport } from './routes/admin/comments'
 import { Route as AdminMutedUsersRouteImport } from './routes/admin/muted-users'
 import { Route as AdminPersonalizeRouteImport } from './routes/admin/personalize'
@@ -37,7 +37,7 @@ import { Route as AdminSettingsRouteRouteImport } from './routes/admin/settings/
 import { Route as AdminTaxonomyRouteImport } from './routes/admin/taxonomy'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as ApiAuthRouteImport } from './routes/api.auth'
-import { Route as ApiSendRouteImport } from './routes/api.send'
+import { Route as ApiTrackRouteImport } from './routes/api.track'
 import { Route as ImagesSplatRouteImport } from './routes/images.$'
 import { Route as MomentsAtomDotxmlRouteImport } from './routes/moments.atom[.]xml'
 import { Route as MomentsFeedDotjsonRouteImport } from './routes/moments.feed[.]json'
@@ -107,11 +107,6 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StatsDotjsRoute = StatsDotjsRouteImport.update({
-  id: '/stats.js',
-  path: '/stats.js',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const PublicIndexRoute = PublicIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -165,6 +160,11 @@ const AdminAccessRouteRoute = AdminAccessRouteRouteImport.update({
   path: '/access',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminCommentsRoute = AdminCommentsRouteImport.update({
   id: '/comments',
   path: '/comments',
@@ -205,9 +205,9 @@ const ApiAuthRoute = ApiAuthRouteImport.update({
   path: '/api/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiSendRoute = ApiSendRouteImport.update({
-  id: '/api/send',
-  path: '/api/send',
+const ApiTrackRoute = ApiTrackRouteImport.update({
+  id: '/api/track',
+  path: '/api/track',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ImagesSplatRoute = ImagesSplatRouteImport.update({
@@ -370,7 +370,6 @@ export interface FileRoutesByFullPath {
   '/rss.xml': typeof RssDotxmlRoute
   '/site.webmanifest': typeof SiteDotwebmanifestRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/stats.js': typeof StatsDotjsRoute
   '/admin/access': typeof AdminAccessRouteRouteWithChildren
   '/admin/posts': typeof AdminPostsRouteRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
@@ -380,13 +379,14 @@ export interface FileRoutesByFullPath {
   '/search': typeof PublicSearchRoute
   '/unsubscribe': typeof PublicUnsubscribeRoute
   '/admin/$': typeof AdminSplatRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/muted-users': typeof AdminMutedUsersRoute
   '/admin/personalize': typeof AdminPersonalizeRoute
   '/admin/taxonomy': typeof AdminTaxonomyRoute
   '/api/$': typeof ApiSplatRoute
   '/api/auth': typeof ApiAuthRouteWithChildren
-  '/api/send': typeof ApiSendRoute
+  '/api/track': typeof ApiTrackRoute
   '/images/$': typeof ImagesSplatRoute
   '/moments/atom.xml': typeof MomentsAtomDotxmlRoute
   '/moments/feed.json': typeof MomentsFeedDotjsonRoute
@@ -425,7 +425,6 @@ export interface FileRoutesByTo {
   '/rss.xml': typeof RssDotxmlRoute
   '/site.webmanifest': typeof SiteDotwebmanifestRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/stats.js': typeof StatsDotjsRoute
   '/': typeof PublicIndexRoute
   '/$': typeof PublicSplatRoute
   '/friend-links': typeof PublicFriendLinksRoute
@@ -433,13 +432,14 @@ export interface FileRoutesByTo {
   '/search': typeof PublicSearchRoute
   '/unsubscribe': typeof PublicUnsubscribeRoute
   '/admin/$': typeof AdminSplatRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/muted-users': typeof AdminMutedUsersRoute
   '/admin/personalize': typeof AdminPersonalizeRoute
   '/admin/taxonomy': typeof AdminTaxonomyRoute
   '/api/$': typeof ApiSplatRoute
   '/api/auth': typeof ApiAuthRouteWithChildren
-  '/api/send': typeof ApiSendRoute
+  '/api/track': typeof ApiTrackRoute
   '/images/$': typeof ImagesSplatRoute
   '/moments/atom.xml': typeof MomentsAtomDotxmlRoute
   '/moments/feed.json': typeof MomentsFeedDotjsonRoute
@@ -480,7 +480,6 @@ export interface FileRoutesById {
   '/rss.xml': typeof RssDotxmlRoute
   '/site.webmanifest': typeof SiteDotwebmanifestRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/stats.js': typeof StatsDotjsRoute
   '/_public/_auth': typeof PublicAuthRouteRouteWithChildren
   '/_public/_user': typeof PublicUserRouteRouteWithChildren
   '/admin/access': typeof AdminAccessRouteRouteWithChildren
@@ -492,13 +491,14 @@ export interface FileRoutesById {
   '/_public/search': typeof PublicSearchRoute
   '/_public/unsubscribe': typeof PublicUnsubscribeRoute
   '/admin/$': typeof AdminSplatRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/muted-users': typeof AdminMutedUsersRoute
   '/admin/personalize': typeof AdminPersonalizeRoute
   '/admin/taxonomy': typeof AdminTaxonomyRoute
   '/api/$': typeof ApiSplatRoute
   '/api/auth': typeof ApiAuthRouteWithChildren
-  '/api/send': typeof ApiSendRoute
+  '/api/track': typeof ApiTrackRoute
   '/images/$': typeof ImagesSplatRoute
   '/moments/atom.xml': typeof MomentsAtomDotxmlRoute
   '/moments/feed.json': typeof MomentsFeedDotjsonRoute
@@ -542,7 +542,6 @@ export interface FileRouteTypes {
     | '/rss.xml'
     | '/site.webmanifest'
     | '/sitemap.xml'
-    | '/stats.js'
     | '/admin/access'
     | '/admin/posts'
     | '/admin/settings'
@@ -552,13 +551,14 @@ export interface FileRouteTypes {
     | '/search'
     | '/unsubscribe'
     | '/admin/$'
+    | '/admin/analytics'
     | '/admin/comments'
     | '/admin/muted-users'
     | '/admin/personalize'
     | '/admin/taxonomy'
     | '/api/$'
     | '/api/auth'
-    | '/api/send'
+    | '/api/track'
     | '/images/$'
     | '/moments/atom.xml'
     | '/moments/feed.json'
@@ -597,7 +597,6 @@ export interface FileRouteTypes {
     | '/rss.xml'
     | '/site.webmanifest'
     | '/sitemap.xml'
-    | '/stats.js'
     | '/'
     | '/$'
     | '/friend-links'
@@ -605,13 +604,14 @@ export interface FileRouteTypes {
     | '/search'
     | '/unsubscribe'
     | '/admin/$'
+    | '/admin/analytics'
     | '/admin/comments'
     | '/admin/muted-users'
     | '/admin/personalize'
     | '/admin/taxonomy'
     | '/api/$'
     | '/api/auth'
-    | '/api/send'
+    | '/api/track'
     | '/images/$'
     | '/moments/atom.xml'
     | '/moments/feed.json'
@@ -651,7 +651,6 @@ export interface FileRouteTypes {
     | '/rss.xml'
     | '/site.webmanifest'
     | '/sitemap.xml'
-    | '/stats.js'
     | '/_public/_auth'
     | '/_public/_user'
     | '/admin/access'
@@ -663,13 +662,14 @@ export interface FileRouteTypes {
     | '/_public/search'
     | '/_public/unsubscribe'
     | '/admin/$'
+    | '/admin/analytics'
     | '/admin/comments'
     | '/admin/muted-users'
     | '/admin/personalize'
     | '/admin/taxonomy'
     | '/api/$'
     | '/api/auth'
-    | '/api/send'
+    | '/api/track'
     | '/images/$'
     | '/moments/atom.xml'
     | '/moments/feed.json'
@@ -712,10 +712,9 @@ export interface RootRouteChildren {
   RssDotxmlRoute: typeof RssDotxmlRoute
   SiteDotwebmanifestRoute: typeof SiteDotwebmanifestRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
-  StatsDotjsRoute: typeof StatsDotjsRoute
   ApiSplatRoute: typeof ApiSplatRoute
   ApiAuthRoute: typeof ApiAuthRouteWithChildren
-  ApiSendRoute: typeof ApiSendRoute
+  ApiTrackRoute: typeof ApiTrackRoute
   ImagesSplatRoute: typeof ImagesSplatRoute
   MomentsAtomDotxmlRoute: typeof MomentsAtomDotxmlRoute
   MomentsFeedDotjsonRoute: typeof MomentsFeedDotjsonRoute
@@ -778,13 +777,6 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/stats.js': {
-      id: '/stats.js'
-      path: '/stats.js'
-      fullPath: '/stats.js'
-      preLoaderRoute: typeof StatsDotjsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_public/': {
@@ -864,6 +856,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAccessRouteRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/analytics': {
+      id: '/admin/analytics'
+      path: '/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/comments': {
       id: '/admin/comments'
       path: '/comments'
@@ -920,11 +919,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/send': {
-      id: '/api/send'
-      path: '/api/send'
-      fullPath: '/api/send'
-      preLoaderRoute: typeof ApiSendRouteImport
+    '/api/track': {
+      id: '/api/track'
+      path: '/api/track'
+      fullPath: '/api/track'
+      preLoaderRoute: typeof ApiTrackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/images/$': {
@@ -1268,6 +1267,7 @@ interface AdminRouteRouteChildren {
   AdminPostsRouteRoute: typeof AdminPostsRouteRouteWithChildren
   AdminSettingsRouteRoute: typeof AdminSettingsRouteRouteWithChildren
   AdminSplatRoute: typeof AdminSplatRoute
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminCommentsRoute: typeof AdminCommentsRoute
   AdminMutedUsersRoute: typeof AdminMutedUsersRoute
   AdminPersonalizeRoute: typeof AdminPersonalizeRoute
@@ -1282,6 +1282,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminPostsRouteRoute: AdminPostsRouteRouteWithChildren,
   AdminSettingsRouteRoute: AdminSettingsRouteRouteWithChildren,
   AdminSplatRoute: AdminSplatRoute,
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminCommentsRoute: AdminCommentsRoute,
   AdminMutedUsersRoute: AdminMutedUsersRoute,
   AdminPersonalizeRoute: AdminPersonalizeRoute,
@@ -1315,10 +1316,9 @@ const rootRouteChildren: RootRouteChildren = {
   RssDotxmlRoute: RssDotxmlRoute,
   SiteDotwebmanifestRoute: SiteDotwebmanifestRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
-  StatsDotjsRoute: StatsDotjsRoute,
   ApiSplatRoute: ApiSplatRoute,
   ApiAuthRoute: ApiAuthRouteWithChildren,
-  ApiSendRoute: ApiSendRoute,
+  ApiTrackRoute: ApiTrackRoute,
   ImagesSplatRoute: ImagesSplatRoute,
   MomentsAtomDotxmlRoute: MomentsAtomDotxmlRoute,
   MomentsFeedDotjsonRoute: MomentsFeedDotjsonRoute,

@@ -465,7 +465,7 @@ export async function createEmptyPost(context: DbContext) {
   return { id: post.id, saveToken: post.saveToken };
 }
 
-/** Whether view counts can be read: the Umami config, a snapshot, and its age. */
+/** Whether view counts can be read: a popularity snapshot, and its age. */
 async function readPopularity(context: DbContext) {
   const { status, snapshot } =
     await postPopularityService.getStatusWithSnapshot(context);

@@ -586,7 +586,7 @@ export const AdminPostListPageSchema = z.object({
   popularity: z
     .enum(["unconfigured", "missing", "expired", "ready"])
     .describe(
-      "Whether viewCount can be read: only ready carries it. unconfigured is no Umami, missing no sync yet, expired a snapshot older than a week.",
+      "Whether viewCount can be read: only ready carries it. missing is no snapshot yet, expired a snapshot older than a week.",
     ),
   statusCounts: AdminPostStatusCountsSchema.describe(
     "Counts matching search, publicOnly, taxonomy scope and the category and tag filters before status filtering or pagination.",

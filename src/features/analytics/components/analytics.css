@@ -1,0 +1,113 @@
+.analytics {
+  container-type: inline-size;
+  padding-bottom: 32px;
+  transition: opacity 0.15s ease;
+}
+.analytics[data-fetching] {
+  opacity: 0.72;
+}
+
+.analytics-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.analytics-title {
+  font-size: var(--admin-text-section);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.analytics-description {
+  margin-top: 4px;
+  font-size: var(--admin-text-meta);
+  color: var(--admin-fg-3);
+}
+.analytics-ranges {
+  display: flex;
+  gap: 6px;
+}
+
+.analytics-totals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.analytics-card {
+  min-width: 0;
+  padding: 16px 18px;
+  border-radius: var(--admin-radius-card);
+  background: var(--admin-surface);
+  box-shadow:
+    0 0 0 1px var(--admin-line),
+    var(--admin-shadow-card);
+}
+.analytics-total {
+  padding: 18px 20px;
+}
+.analytics-kicker {
+  font-size: var(--admin-text-meta);
+  color: var(--admin-fg-3);
+}
+.analytics-big {
+  margin-top: 6px;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.analytics-trend {
+  margin-top: 16px;
+}
+.analytics-card-title {
+  margin-bottom: 8px;
+  font-size: var(--admin-text-body);
+  font-weight: 600;
+}
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.analytics-list {
+  display: flex;
+  flex-direction: column;
+}
+.analytics-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid var(--admin-line);
+  font-size: var(--admin-text-meta);
+}
+.analytics-row:first-child {
+  border-top: 0;
+}
+.analytics-row-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--admin-fg-2);
+}
+.analytics-row-value {
+  flex-shrink: 0;
+  color: var(--admin-fg-3);
+  font-variant-numeric: tabular-nums;
+}
+.analytics-empty {
+  padding: 12px 0;
+  font-size: var(--admin-text-meta);
+  color: var(--admin-fg-3);
+}
+
+@container (max-width: 760px) {
+  .analytics-totals,
+  .analytics-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

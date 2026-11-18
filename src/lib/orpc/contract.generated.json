@@ -1083,6 +1083,18 @@
       }
     }
   },
+  "analytics": {
+    "report": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "GET",
+          "path": "/admin/analytics"
+        }
+      }
+    }
+  },
   "cache": {
     "invalidate": {
       "~orpc": {

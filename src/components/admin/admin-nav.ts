@@ -8,6 +8,7 @@ import {
   Palette,
   Settings,
   Tags,
+  TrendingUp,
   VolumeX,
   type LucideIcon,
 } from "lucide-react";
@@ -45,6 +46,13 @@ export const ADMIN_NAV: ReadonlyArray<AdminNavGroup> = [
         prefix: "/admin",
         label: () => m.admin_sidebar_dashboard(),
         icon: LayoutDashboard,
+      },
+      {
+        id: "analytics",
+        to: "/admin/analytics",
+        prefix: "/admin/analytics",
+        label: () => m.admin_sidebar_analytics(),
+        icon: TrendingUp,
       },
     ],
   },

@@ -1,10 +1,9 @@
 import { invalidate } from "@/features/cache/public-cache";
-import * as PostPopularityRepo from "@/features/post-popularity/data/post-popularity.data";
 import {
-  resolveUmamiApiConfig,
-  umamiClient,
-  type UmamiApiConfig,
-} from "@/features/post-popularity/data/umami-api";
+  countDailyViews,
+  countPathMetrics,
+} from "@/features/analytics/data/analytics.data";
+import * as PostPopularityRepo from "@/features/post-popularity/data/post-popularity.data";
 import {
   buildPostPopularitySnapshot,
   getPostPopularityWindow,
@@ -25,7 +24,6 @@ import {
 } from "@/features/post-popularity/post-popularity.schema";
 import { popularPosts } from "@/features/posts/posts.cache";
 import type { PostItem } from "@/features/posts/schema/posts.schema";
-import { serverEnv } from "@/lib/env/server.env";
 import type { Result } from "@/lib/errors";
 import { err, ok } from "@/lib/errors";
 
@@ -37,13 +35,12 @@ type SyncResult = Result<PostPopularitySyncStatus, { reason: "SYNC_FAILED" }>;
 
 type Dependencies = {
   now: () => Date;
-  resolveConfig: (env: Env) => UmamiApiConfig;
   getPathMetrics: (
-    config: UmamiApiConfig,
+    db: DB,
     window: PostPopularityWindow,
   ) => Promise<PostPopularityMetric[]>;
   getDailyViews: (
-    config: UmamiApiConfig,
+    db: DB,
     window: PostPopularityWindow,
   ) => Promise<PostPopularityDailyViews[]>;
   listPublishedPosts: (db: DB) => Promise<PublishedPostPopularityRef[]>;
@@ -68,21 +65,22 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+/** The snapshot window as the `page_views` reader's half-open Date range. */
+function windowRange(window: PostPopularityWindow) {
+  return { since: new Date(window.startAt), until: new Date(window.endAt + 1) };
+}
+
 function toSyncStatus({
-  configured,
-  configError,
   snapshot,
   status,
   now,
 }: {
-  configured: boolean;
-  configError: string | null;
   snapshot: PostPopularitySnapshot | null;
   status: PostPopularityStatusRecord | null;
   now: number;
 }): PostPopularitySyncStatus {
   return PostPopularitySyncStatusSchema.parse({
-    configured,
+    configured: true,
     expired: snapshot ? !isPostPopularitySnapshotUsable(snapshot, now) : false,
     postCount: snapshot?.entries.length ?? 0,
     lastAttemptAt: status?.lastAttemptAt ?? null,
@@ -90,7 +88,7 @@ function toSyncStatus({
     expiresAt: snapshot?.syncedAt
       ? snapshot.syncedAt + POST_POPULARITY_MAX_AGE_MS
       : null,
-    lastError: configError ?? status?.lastError ?? null,
+    lastError: status?.lastError ?? null,
     windowStart: snapshot?.windowStart ?? status?.windowStart ?? null,
     windowEnd: snapshot?.windowEnd ?? status?.windowEnd ?? null,
   });
@@ -107,19 +105,9 @@ export function createPostPopularityService(dependencies: Dependencies) {
       dependencies.readSnapshot(context.env),
       dependencies.readStatus(context.env),
     ]);
-    let configured = true;
-    let configError: string | null = null;
-    try {
-      dependencies.resolveConfig(context.env);
-    } catch (error) {
-      configured = false;
-      configError = errorMessage(error);
-    }
 
     return {
       status: toSyncStatus({
-        configured,
-        configError,
         snapshot,
         status,
         now,
@@ -145,20 +133,21 @@ export function createPostPopularityService(dependencies: Dependencies) {
     let snapshotWritten = false;
 
     try {
-      const config = dependencies.resolveConfig(context.env);
       const [metrics, posts, daily] = await Promise.all([
-        dependencies.getPathMetrics(config, window),
+        dependencies.getPathMetrics(context.db, window),
         dependencies.listPublishedPosts(context.db),
         // The per-day series is extra: failing to get it must not fail the sync.
-        dependencies.getDailyViews(config, window).catch((error: unknown) => {
-          console.error(
-            JSON.stringify({
-              message: "post popularity daily views failed",
-              error: errorMessage(error),
-            }),
-          );
-          return [];
-        }),
+        dependencies
+          .getDailyViews(context.db, window)
+          .catch((error: unknown) => {
+            console.error(
+              JSON.stringify({
+                message: "post popularity daily views failed",
+                error: errorMessage(error),
+              }),
+            );
+            return [];
+          }),
       ]);
       const snapshot = buildPostPopularitySnapshot({
         metrics,
@@ -190,8 +179,6 @@ export function createPostPopularityService(dependencies: Dependencies) {
       await dependencies.writeStatus(context.env, status);
       return ok(
         toSyncStatus({
-          configured: true,
-          configError: null,
           snapshot,
           status,
           now: attemptedAt,
@@ -266,10 +253,10 @@ export function createPostPopularityService(dependencies: Dependencies) {
 
 export const postPopularityService = createPostPopularityService({
   now: () => new Date(),
-  resolveConfig: (env) => resolveUmamiApiConfig(serverEnv(env)),
-  getPathMetrics: (config, window) =>
-    umamiClient.getPathMetrics(config, window),
-  getDailyViews: (config, window) => umamiClient.getDailyViews(config, window),
+  // The site's own page views (the `page_views` table), never an outside
+  // analytics service.
+  getPathMetrics: (db, window) => countPathMetrics(db, windowRange(window)),
+  getDailyViews: (db, window) => countDailyViews(db, windowRange(window)),
   listPublishedPosts: PostPopularityRepo.listPublishedPosts,
   readSnapshot: PostPopularityRepo.readSnapshot,
   writeSnapshot: PostPopularityRepo.writeSnapshot,

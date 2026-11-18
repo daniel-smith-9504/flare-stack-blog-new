@@ -22,6 +22,7 @@ declare module "@tanstack/react-start" {
       requestContext: {
         env: Env;
         executionCtx: ExecutionContext<unknown>;
+        geo: { country?: string; region?: string; city?: string };
       };
     };
   }
@@ -29,6 +30,12 @@ declare module "@tanstack/react-start" {
 
 type AppProps = {
   locale: string;
+  // Cloudflare's request metadata does not survive the entrypoint call, so the
+  // default handler reads it off the incoming Request and hands it over in the
+  // props.
+  country?: string;
+  region?: string;
+  city?: string;
 };
 
 export class App extends WorkerEntrypoint<Env, AppProps> {
@@ -38,6 +45,11 @@ export class App extends WorkerEntrypoint<Env, AppProps> {
         context: {
           env: this.env,
           executionCtx: this.ctx,
+          geo: {
+            country: this.ctx.props.country,
+            region: this.ctx.props.region,
+            city: this.ctx.props.city,
+          },
         },
       }),
     );
@@ -57,7 +69,14 @@ export default {
       return probeNotFoundResponse(request);
     }
     const locale = extractLocaleFromRequest(request);
-    const app = ctx.exports.App({ props: { locale } });
+    const app = ctx.exports.App({
+      props: {
+        locale,
+        country: request.cf?.country,
+        region: request.cf?.region,
+        city: request.cf?.city,
+      },
+    });
     const route = workersCacheRoute(request, __BUILD_ID__);
     if (route.cache === "bypass") {
       // A Theme preview: neither read from the cache nor stored in it.
