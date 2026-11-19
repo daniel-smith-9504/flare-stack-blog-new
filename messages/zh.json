@@ -37,10 +37,7 @@
   "admin_comments_handle_all": "全部标为已处理",
   "admin_comments_handle_all_desc": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountZh = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountZh = count: number"],
       "match": {
         "count=*": "这 {formattedCountZh} 条评论会离开待回复列表。评论本身不受影响，也不会通知评论者。"
       }
@@ -49,10 +46,7 @@
   "admin_comments_handle_all_title": "全部标为已处理？",
   "admin_comments_handled_all": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountZh = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountZh = count: number"],
       "match": {
         "count=*": "已将 {formattedCountZh} 条评论标为已处理"
       }
@@ -120,7 +114,7 @@
   "admin_overview_popularity_expired": "热度数据已过期",
   "admin_overview_popularity_expired_desc": "超过 7 天没有同步，首页热门已改用置顶和最新文章",
   "admin_overview_popularity_failed": "热度同步失败",
-  "admin_overview_popularity_sync_failed_desc": "统计汇总没有写入成功，请稍后重试，详细原因见维护页",
+  "admin_overview_popularity_sync_failed_desc": "统计汇总没有写入成功，系统会自动重试",
   "admin_overview_reply_hint": "Ctrl + Enter 发送",
   "admin_overview_reply_placeholder": "回复 {name}…",
   "admin_overview_reply_send": "发送",
@@ -301,10 +295,7 @@
   "agent_skill_pair_revoked": "已撤销「{name}」的访问权限",
   "agent_skill_pair_valid_until": [
     {
-      "declarations": [
-        "input time",
-        "local formattedTimeZh = time: datetime hour=2-digit minute=2-digit hour12=false"
-      ],
+      "declarations": ["input time", "local formattedTimeZh = time: datetime hour=2-digit minute=2-digit hour12=false"],
       "match": {
         "time=*": "有效至 {formattedTimeZh}"
       }
@@ -447,10 +438,7 @@
   "dashboard_stat_comments": "评论",
   "dashboard_stat_comments_recent": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountZh = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountZh = count: number"],
       "match": {
         "count=*": "近 7 天 +{formattedCountZh}"
       }
@@ -458,10 +446,7 @@
   ],
   "dashboard_stat_drafts": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountZh = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountZh = count: number"],
       "match": {
         "count=*": "{formattedCountZh} 篇草稿"
       }
@@ -470,10 +455,7 @@
   "dashboard_stat_friend_links": "友链",
   "dashboard_stat_friend_links_pending": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountZh = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountZh = count: number"],
       "match": {
         "count=*": "{formattedCountZh} 个待审核"
       }
@@ -495,9 +477,7 @@
   "editor_action_slug_set": "URL slug 已设置",
   "editor_action_slug_set_desc": [
     {
-      "declarations": [
-        "input slug"
-      ],
+      "declarations": ["input slug"],
       "match": {
         "slug=*": "URL slug 已设置为 \"{slug}\""
       }
@@ -683,9 +663,7 @@
   "editor_status_save_error": "保存失败",
   "editor_status_saved": [
     {
-      "declarations": [
-        "input time"
-      ],
+      "declarations": ["input time"],
       "match": {
         "time=*": "已保存 {time}"
       }
@@ -821,10 +799,7 @@
   "footer_powered_by": "Powered by",
   "format_date": [
     {
-      "declarations": [
-        "input date",
-        "local formattedDateZh = date: datetime year=numeric month=long day=numeric"
-      ],
+      "declarations": ["input date", "local formattedDateZh = date: datetime year=numeric month=long day=numeric"],
       "match": {
         "date=*": "{formattedDateZh}"
       }
@@ -832,10 +807,7 @@
   ],
   "format_datetime": [
     {
-      "declarations": [
-        "input date",
-        "local formattedDateZh = date: datetime year=numeric month=long day=numeric hour=2-digit minute=2-digit hour12=false"
-      ],
+      "declarations": ["input date", "local formattedDateZh = date: datetime year=numeric month=long day=numeric hour=2-digit minute=2-digit hour12=false"],
       "match": {
         "date=*": "{formattedDateZh}"
       }
@@ -843,10 +815,7 @@
   ],
   "format_month_day_time": [
     {
-      "declarations": [
-        "input date",
-        "local formattedDateTimeZh = date: datetime month=2-digit day=2-digit hour=2-digit minute=2-digit hour12=false"
-      ],
+      "declarations": ["input date", "local formattedDateTimeZh = date: datetime month=2-digit day=2-digit hour=2-digit minute=2-digit hour12=false"],
       "match": {
         "date=*": "{formattedDateTimeZh}"
       }
@@ -885,9 +854,7 @@
   "friend_link_validation_required": "站点名称不能为空",
   "friend_link_validation_too_long": [
     {
-      "declarations": [
-        "input max"
-      ],
+      "declarations": ["input max"],
       "match": {
         "max=*": "最长{max}字"
       }
@@ -1060,9 +1027,7 @@
   "media_upload": "上传",
   "media_upload_fail": [
     {
-      "declarations": [
-        "input name"
-      ],
+      "declarations": ["input name"],
       "match": {
         "name=*": "上传失败: {name}"
       }
@@ -1236,10 +1201,7 @@
   "post_video_player_direct": "视频播放器",
   "post_views_count": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountZh = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountZh = count: number"],
       "match": {
         "count=*": "{formattedCountZh} 次浏览"
       }
@@ -1247,10 +1209,7 @@
   ],
   "post_word_count": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountZh = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountZh = count: number"],
       "match": {
         "count=*": "约 {formattedCountZh} 字"
       }
@@ -1260,10 +1219,7 @@
   "posts_category_not_found_title": "分类「{name}」不存在",
   "posts_count": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountZh = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountZh = count: number"],
       "match": {
         "count=*": "{formattedCountZh} 篇文章"
       }
@@ -1297,10 +1253,7 @@
   "profile_validation_name_min": "昵称至少需要 2 个字符",
   "read_time": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountZh = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountZh = count: number"],
       "match": {
         "count=*": "{formattedCountZh} 分钟"
       }
@@ -1310,9 +1263,7 @@
   "request_error_permission_denied_title": "权限不足",
   "request_error_rate_limited_desc": [
     {
-      "declarations": [
-        "input seconds"
-      ],
+      "declarations": ["input seconds"],
       "match": {
         "seconds=*": "请在 {seconds} 秒后重试。"
       }
@@ -1333,9 +1284,7 @@
   "search_no_results": "未找到相关文章",
   "search_no_results_with_query": [
     {
-      "declarations": [
-        "input query"
-      ],
+      "declarations": ["input query"],
       "match": {
         "query=*": "没有找到与 \"{query}\" 相关的文章，换个关键词试试吧。"
       }
@@ -1469,17 +1418,6 @@
   "settings_maintenance_cache_toast_error": "缓存重置失败",
   "settings_maintenance_cache_toast_success": "全站缓存重置成功",
   "settings_maintenance_group_danger": "危险操作",
-  "settings_maintenance_popularity_auto": "每 24 小时会自动同步一次。",
-  "settings_maintenance_popularity_count": "已同步 {count} 篇",
-  "settings_maintenance_popularity_status_expired": "已过期",
-  "settings_maintenance_popularity_status_pending": "等待首次同步",
-  "settings_maintenance_popularity_status_ready": "可用",
-  "settings_maintenance_popularity_status_unconfigured": "未配置",
-  "settings_maintenance_popularity_sync_btn": "立即同步",
-  "settings_maintenance_popularity_syncing": "同步中...",
-  "settings_maintenance_popularity_title": "文章热度同步",
-  "settings_maintenance_popularity_toast_error": "文章热度同步失败",
-  "settings_maintenance_popularity_toast_success": "文章热度同步完成",
   "settings_maintenance_search_btn": "重建索引",
   "settings_maintenance_search_confirm_btn": "执行重建",
   "settings_maintenance_search_confirm_message": "将重新读取全部已发布文章并重建搜索索引。重建期间，前台搜索可能短暂不可用或响应变慢。是否确认执行？",
@@ -1543,9 +1481,7 @@
   "settings_site_validation_nav_label_required": "请填写链接名称",
   "settings_site_validation_too_long": [
     {
-      "declarations": [
-        "input max"
-      ],
+      "declarations": ["input max"],
       "match": {
         "max=*": "最长{max}字"
       }
@@ -1661,10 +1597,7 @@
   "theme_sidebar_toc_rail": "左栏内",
   "time_ago_days": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountZh = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountZh = count: number"],
       "match": {
         "count=*": "{formattedCountZh} 天前"
       }
@@ -1672,10 +1605,7 @@
   ],
   "time_ago_hours": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountZh = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountZh = count: number"],
       "match": {
         "count=*": "{formattedCountZh} 小时前"
       }
@@ -1684,10 +1614,7 @@
   "time_ago_just_now": "刚刚",
   "time_ago_minutes": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountZh = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountZh = count: number"],
       "match": {
         "count=*": "{formattedCountZh} 分钟前"
       }

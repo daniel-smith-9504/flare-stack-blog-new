@@ -21,9 +21,9 @@ export type SettingsNotice = {
 /**
  * The notices that point at somewhere to fix, in the order the overview's
  * head shows them: no notification email, a failed popularity sync or else
- * an expired snapshot (both synced again from the maintenance page), the
- * default site identity. A newer release is not here: the overview's update
- * block carries it.
+ * an expired snapshot (the daily sync rebuilds both), the default site
+ * identity. A newer release is not here: the overview's update block carries
+ * it.
  */
 export function settingsNotices(
   data: Pick<

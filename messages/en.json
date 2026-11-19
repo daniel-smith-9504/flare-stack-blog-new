@@ -37,10 +37,7 @@
   "admin_comments_handle_all": "Mark all as handled",
   "admin_comments_handle_all_desc": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountEn = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountEn = count: number"],
       "match": {
         "count=1": "This comment will leave the list awaiting reply. The comment itself stays, and no one is notified.",
         "count=*": "These {formattedCountEn} comments will leave the list awaiting reply. The comments themselves stay, and no one is notified."
@@ -50,10 +47,7 @@
   "admin_comments_handle_all_title": "Mark all as handled?",
   "admin_comments_handled_all": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountEn = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountEn = count: number"],
       "match": {
         "count=1": "Marked {formattedCountEn} comment as handled",
         "count=*": "Marked {formattedCountEn} comments as handled"
@@ -122,7 +116,7 @@
   "admin_overview_popularity_expired": "Popularity data expired",
   "admin_overview_popularity_expired_desc": "Not synced for over 7 days; the homepage shows pinned and recent posts instead",
   "admin_overview_popularity_failed": "Popularity sync failed",
-  "admin_overview_popularity_sync_failed_desc": "The snapshot could not be saved. Try again later; the maintenance page has the details",
+  "admin_overview_popularity_sync_failed_desc": "The snapshot could not be saved; it will be retried automatically",
   "admin_overview_reply_hint": "Ctrl + Enter to send",
   "admin_overview_reply_placeholder": "Reply to {name}…",
   "admin_overview_reply_send": "Send",
@@ -303,10 +297,7 @@
   "agent_skill_pair_revoked": "Access revoked for “{name}”",
   "agent_skill_pair_valid_until": [
     {
-      "declarations": [
-        "input time",
-        "local formattedTimeEn = time: datetime hour=2-digit minute=2-digit"
-      ],
+      "declarations": ["input time", "local formattedTimeEn = time: datetime hour=2-digit minute=2-digit"],
       "match": {
         "time=*": "Valid until {formattedTimeEn}"
       }
@@ -449,10 +440,7 @@
   "dashboard_stat_comments": "Comments",
   "dashboard_stat_comments_recent": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountEn = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountEn = count: number"],
       "match": {
         "count=1": "+{formattedCountEn} in the last 7 days",
         "count=*": "+{formattedCountEn} in the last 7 days"
@@ -461,10 +449,7 @@
   ],
   "dashboard_stat_drafts": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountEn = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountEn = count: number"],
       "match": {
         "count=1": "{formattedCountEn} draft",
         "count=*": "{formattedCountEn} drafts"
@@ -474,10 +459,7 @@
   "dashboard_stat_friend_links": "Friend links",
   "dashboard_stat_friend_links_pending": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountEn = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountEn = count: number"],
       "match": {
         "count=1": "{formattedCountEn} awaiting review",
         "count=*": "{formattedCountEn} awaiting review"
@@ -500,9 +482,7 @@
   "editor_action_slug_set": "URL Slug Set",
   "editor_action_slug_set_desc": [
     {
-      "declarations": [
-        "input slug"
-      ],
+      "declarations": ["input slug"],
       "match": {
         "slug=*": "URL slug set to \"{slug}\""
       }
@@ -688,9 +668,7 @@
   "editor_status_save_error": "Save failed",
   "editor_status_saved": [
     {
-      "declarations": [
-        "input time"
-      ],
+      "declarations": ["input time"],
       "match": {
         "time=*": "Saved {time}"
       }
@@ -826,10 +804,7 @@
   "footer_powered_by": "Powered by",
   "format_date": [
     {
-      "declarations": [
-        "input date",
-        "local formattedDateEn = date: datetime year=numeric month=2-digit day=2-digit"
-      ],
+      "declarations": ["input date", "local formattedDateEn = date: datetime year=numeric month=2-digit day=2-digit"],
       "match": {
         "date=*": "{formattedDateEn}"
       }
@@ -837,10 +812,7 @@
   ],
   "format_datetime": [
     {
-      "declarations": [
-        "input date",
-        "local formattedDateTimeEn = date: datetime year=numeric month=2-digit day=2-digit hour=2-digit minute=2-digit"
-      ],
+      "declarations": ["input date", "local formattedDateTimeEn = date: datetime year=numeric month=2-digit day=2-digit hour=2-digit minute=2-digit"],
       "match": {
         "date=*": "{formattedDateTimeEn}"
       }
@@ -848,10 +820,7 @@
   ],
   "format_month_day_time": [
     {
-      "declarations": [
-        "input date",
-        "local formattedDateTimeEn = date: datetime month=2-digit day=2-digit hour=2-digit minute=2-digit hour12=true"
-      ],
+      "declarations": ["input date", "local formattedDateTimeEn = date: datetime month=2-digit day=2-digit hour=2-digit minute=2-digit hour12=true"],
       "match": {
         "date=*": "{formattedDateTimeEn}"
       }
@@ -890,9 +859,7 @@
   "friend_link_validation_required": "Site name is required",
   "friend_link_validation_too_long": [
     {
-      "declarations": [
-        "input max"
-      ],
+      "declarations": ["input max"],
       "match": {
         "max=*": "Maximum {max} characters"
       }
@@ -1019,13 +986,7 @@
   "media_delete_title": "Delete image",
   "media_delete_with_revisions": [
     {
-      "declarations": [
-        "input name",
-        "input posts",
-        "input revisions",
-        "local formattedPostsEn = posts: number",
-        "local formattedRevisionsEn = revisions: number"
-      ],
+      "declarations": ["input name", "input posts", "input revisions", "local formattedPostsEn = posts: number", "local formattedRevisionsEn = revisions: number"],
       "match": {
         "posts=1, revisions=1": "This permanently deletes \"{name}\" and the earlier version of 1 post that uses it. The post's current draft and published page are not affected. This cannot be undone.",
         "posts=1, revisions=*": "This permanently deletes \"{name}\" and the {formattedRevisionsEn} earlier versions of 1 post that use it. The post's current draft and published page are not affected. This cannot be undone.",
@@ -1036,10 +997,7 @@
   "media_deleted": "Deleted",
   "media_deleted_with_revisions": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountEn = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountEn = count: number"],
       "match": {
         "count=1": "Deleted the image and {formattedCountEn} earlier version",
         "count=*": "Deleted the image and {formattedCountEn} earlier versions"
@@ -1091,9 +1049,7 @@
   "media_upload": "Upload",
   "media_upload_fail": [
     {
-      "declarations": [
-        "input name"
-      ],
+      "declarations": ["input name"],
       "match": {
         "name=*": "Upload failed: {name}"
       }
@@ -1267,10 +1223,7 @@
   "post_video_player_direct": "Video player",
   "post_views_count": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountEn = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountEn = count: number"],
       "match": {
         "count=1": "{formattedCountEn} view",
         "count=*": "{formattedCountEn} views"
@@ -1279,10 +1232,7 @@
   ],
   "post_word_count": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountEn = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountEn = count: number"],
       "match": {
         "count=1": "About {formattedCountEn} word",
         "count=*": "About {formattedCountEn} words"
@@ -1293,10 +1243,7 @@
   "posts_category_not_found_title": "Category “{name}” does not exist",
   "posts_count": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountEn = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountEn = count: number"],
       "match": {
         "count=1": "{formattedCountEn} post",
         "count=*": "{formattedCountEn} posts"
@@ -1331,10 +1278,7 @@
   "profile_validation_name_min": "Nickname must be at least 2 characters",
   "read_time": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountEn = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountEn = count: number"],
       "match": {
         "count=1": "{formattedCountEn} minute",
         "count=*": "{formattedCountEn} minutes"
@@ -1345,9 +1289,7 @@
   "request_error_permission_denied_title": "Permission Denied",
   "request_error_rate_limited_desc": [
     {
-      "declarations": [
-        "input seconds"
-      ],
+      "declarations": ["input seconds"],
       "match": {
         "seconds=*": "Please try again in {seconds} seconds."
       }
@@ -1368,9 +1310,7 @@
   "search_no_results": "No results found",
   "search_no_results_with_query": [
     {
-      "declarations": [
-        "input query"
-      ],
+      "declarations": ["input query"],
       "match": {
         "query=*": "No posts found matching \"{query}\". Try searching with different keywords."
       }
@@ -1504,17 +1444,6 @@
   "settings_maintenance_cache_toast_error": "Cache reset failed",
   "settings_maintenance_cache_toast_success": "All cache reset successfully",
   "settings_maintenance_group_danger": "Danger zone",
-  "settings_maintenance_popularity_auto": "Syncs automatically every 24 hours.",
-  "settings_maintenance_popularity_count": "Posts synced: {count}",
-  "settings_maintenance_popularity_status_expired": "Expired",
-  "settings_maintenance_popularity_status_pending": "Waiting for first sync",
-  "settings_maintenance_popularity_status_ready": "Ready",
-  "settings_maintenance_popularity_status_unconfigured": "Not configured",
-  "settings_maintenance_popularity_sync_btn": "Sync now",
-  "settings_maintenance_popularity_syncing": "Syncing...",
-  "settings_maintenance_popularity_title": "Post Popularity Sync",
-  "settings_maintenance_popularity_toast_error": "Post popularity sync failed",
-  "settings_maintenance_popularity_toast_success": "Post popularity sync completed",
   "settings_maintenance_search_btn": "Rebuild Index",
   "settings_maintenance_search_confirm_btn": "Execute Rebuild",
   "settings_maintenance_search_confirm_message": "This re-reads every published post and rebuilds the search index. Search on the public site may be briefly unavailable or slow while it runs. Continue?",
@@ -1578,9 +1507,7 @@
   "settings_site_validation_nav_label_required": "Please enter a link name",
   "settings_site_validation_too_long": [
     {
-      "declarations": [
-        "input max"
-      ],
+      "declarations": ["input max"],
       "match": {
         "max=*": "Maximum {max} characters"
       }
@@ -1696,10 +1623,7 @@
   "theme_sidebar_toc_rail": "In the sidebar",
   "time_ago_days": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountEn = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountEn = count: number"],
       "match": {
         "count=1": "{formattedCountEn}d ago",
         "count=*": "{formattedCountEn}d ago"
@@ -1708,10 +1632,7 @@
   ],
   "time_ago_hours": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountEn = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountEn = count: number"],
       "match": {
         "count=1": "{formattedCountEn}h ago",
         "count=*": "{formattedCountEn}h ago"
@@ -1721,10 +1642,7 @@
   "time_ago_just_now": "just now",
   "time_ago_minutes": [
     {
-      "declarations": [
-        "input count",
-        "local formattedCountEn = count: number"
-      ],
+      "declarations": ["input count", "local formattedCountEn = count: number"],
       "match": {
         "count=1": "{formattedCountEn}m ago",
         "count=*": "{formattedCountEn}m ago"

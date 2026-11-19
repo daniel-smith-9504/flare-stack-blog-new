@@ -47,7 +47,7 @@ it("orders the notices: the email, the popularity, the site identity", () => {
   ]);
 });
 
-it("sends an expired snapshot to the maintenance page, where it is synced", () => {
+it("sends an expired snapshot to the maintenance page", () => {
   expect(
     settingsNotices({ ...QUIET, popularityAlert: "expired" }).map((notice) => [
       notice.key,
