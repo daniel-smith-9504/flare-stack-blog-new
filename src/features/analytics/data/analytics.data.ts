@@ -97,6 +97,32 @@ export async function countDailyViews(
 }
 
 /**
+ * The published Posts with the most views in the window, most viewed first.
+ * Ties go to the newer Post.
+ */
+export async function listTopPostsByViews(
+  db: DB,
+  window: { since: Date; until: Date },
+  limit: number,
+): Promise<Array<{ postId: number; views: number }>> {
+  const rows = await db
+    .select({ postId: PostsTable.id, views: count() })
+    .from(PageViewsTable)
+    .innerJoin(PostsTable, eq(PostsTable.publicSlug, PageViewsTable.postSlug))
+    .where(
+      and(
+        gte(PageViewsTable.createdAt, window.since),
+        lt(PageViewsTable.createdAt, window.until),
+        isNotNull(PageViewsTable.postSlug),
+      ),
+    )
+    .groupBy(PostsTable.id)
+    .orderBy(desc(count()), desc(PostsTable.id))
+    .limit(limit);
+  return rows.map((row) => ({ postId: row.postId, views: row.views }));
+}
+
+/**
  * Everything the Admin analytics page shows, in one read per breakdown. The
  * window is rolling: the last `days` days up to now.
  */

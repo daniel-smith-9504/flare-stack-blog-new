@@ -10,7 +10,6 @@ import {
   isPostPopularitySnapshotUsable,
   isPostPopularityUnchanged,
   POST_POPULARITY_MAX_AGE_MS,
-  withViewCounts,
   type PostPopularityDailyViews,
   type PostPopularityMetric,
   type PostPopularityWindow,
@@ -22,14 +21,8 @@ import {
   type PostPopularityStatusRecord,
   type PostPopularitySyncStatus,
 } from "@/features/post-popularity/post-popularity.schema";
-import { popularPosts } from "@/features/posts/posts.cache";
-import type { PostItem } from "@/features/posts/schema/posts.schema";
 import type { Result } from "@/lib/errors";
 import { err, ok } from "@/lib/errors";
-
-type PopularityReadContext = DbContext & {
-  executionCtx: ExecutionContext;
-};
 
 type SyncResult = Result<PostPopularitySyncStatus, { reason: "SYNC_FAILED" }>;
 
@@ -51,14 +44,6 @@ type Dependencies = {
   invalidate: (
     context: DbContext & { executionCtx: ExecutionContext },
   ) => Promise<void>;
-  getPopularPosts: (
-    context: PopularityReadContext,
-    params: {
-      limit: number;
-      snapshotVersion: number;
-      postIds: number[];
-    },
-  ) => Promise<PostItem[]>;
 };
 
 function errorMessage(error: unknown): string {
@@ -214,40 +199,10 @@ export function createPostPopularityService(dependencies: Dependencies) {
     }
   }
 
-  async function getPopular(
-    context: PopularityReadContext,
-    limit = 5,
-  ): Promise<PostItem[]> {
-    const snapshot = await dependencies.readSnapshot(context.env);
-    if (
-      !snapshot ||
-      !isPostPopularitySnapshotUsable(snapshot, dependencies.now().getTime())
-    ) {
-      return [];
-    }
-
-    const posts = await dependencies.getPopularPosts(context, {
-      limit,
-      snapshotVersion: snapshot.syncedAt,
-      postIds: snapshot.entries.map((entry) => entry.postId),
-    });
-    return withViewCounts(posts, snapshot, dependencies.now().getTime());
-  }
-
-  async function attachViewCounts<T extends { id: number }>(
-    context: BaseContext,
-    posts: T[],
-  ): Promise<Array<T & { viewCount?: number }>> {
-    const snapshot = await dependencies.readSnapshot(context.env);
-    return withViewCounts(posts, snapshot, dependencies.now().getTime());
-  }
-
   return {
     getStatus,
     getStatusWithSnapshot,
     sync,
-    getPopular,
-    attachViewCounts,
   };
 }
 
@@ -263,5 +218,4 @@ export const postPopularityService = createPostPopularityService({
   readStatus: PostPopularityRepo.readStatus,
   writeStatus: PostPopularityRepo.writeStatus,
   invalidate: (context) => invalidate.postPopularityUpdated(context),
-  getPopularPosts: (context, params) => popularPosts.get(context, params),
 });

@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vitest";
+import { listTopPostsByViews } from "@/features/analytics/data/analytics.data";
 import { getAnalyticsReport } from "@/features/analytics/service/analytics.service";
 import { getDb } from "@/lib/db";
 import { PageViewsTable, PostsTable } from "@/lib/db/schema";
@@ -106,5 +107,59 @@ describe("Site analytics", () => {
     expect(data.summary).toEqual({ views: 0, visitors: 0 });
     expect(data.topPages).toEqual([]);
     expect(data.daily.every((point) => point.views === 0)).toBe(true);
+  });
+
+  it("ranks published Posts by views, newest first on a tie, drafts aside", async () => {
+    const ids: number[] = [];
+    for (const slug of ["alpha", "beta", "gamma"]) {
+      const [row] = await db
+        .insert(PostsTable)
+        .values({
+          title: slug,
+          slug,
+          status: "published",
+          publicSlug: slug,
+          publishedAt: new Date(),
+          publicSnapshotJson: {
+            title: slug,
+            summary: null,
+            slug,
+            contentJson: null,
+            tagIds: [],
+            categoryId: null,
+            publishedAt: new Date().toISOString(),
+            cover: null,
+          },
+        })
+        .returning({ id: PostsTable.id });
+      ids.push(row!.id);
+    }
+    await db.insert(PostsTable).values({
+      title: "draft",
+      slug: "draft",
+      status: "draft",
+    });
+
+    const times = { alpha: 1, beta: 3, gamma: 3, draft: 9 } as const;
+    for (const [postSlug, count] of Object.entries(times)) {
+      for (let i = 0; i < count; i++) {
+        await visit({ path: `/post/${postSlug}`, postSlug });
+      }
+    }
+
+    const top = await listTopPostsByViews(
+      db,
+      {
+        since: new Date(Date.now() - 60_000),
+        until: new Date(Date.now() + 60_000),
+      },
+      10,
+    );
+
+    expect(top).toEqual([
+      { postId: ids[2], views: 3 },
+      { postId: ids[1], views: 3 },
+      { postId: ids[0], views: 1 },
+    ]);
   });
 });

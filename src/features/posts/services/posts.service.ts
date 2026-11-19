@@ -1,6 +1,9 @@
 import type { JSONContent } from "@tiptap/react";
 import { analyticsSince } from "@/features/analytics/analytics";
-import { countPostSlugViews } from "@/features/analytics/data/analytics.data";
+import {
+  countPostSlugViews,
+  listTopPostsByViews,
+} from "@/features/analytics/data/analytics.data";
 import { invalidate } from "@/features/cache/public-cache";
 import * as CategoryRepo from "@/features/categories/data/categories.data";
 import * as MediaRepo from "@/features/media/data/media.data";
@@ -28,6 +31,7 @@ import type {
   GetPostsCursorInput,
   GetPostsInput,
   PinPostInput,
+  PostItem,
   PublishPostInput,
   UnpinPostInput,
   UnpublishPostInput,
@@ -464,16 +468,44 @@ export async function createEmptyPost(context: DbContext) {
   return { id: post.id, saveToken: post.saveToken };
 }
 
-/** Views of the last 30 days per Post, read live from this site's page views. */
-async function readViewCounts(context: DbContext) {
+/** The rolling window the public view counts use: the last 30 days to now. */
+function lastThirtyDays() {
   const now = Date.now();
-  const rows = await countPostSlugViews(context.db, {
+  return {
     since: analyticsSince(30, now),
     // Rows are stamped to the second, so the window's exclusive end is the
     // next second.
     until: new Date(Math.floor(now / 1000) * 1000 + 1000),
-  });
+  };
+}
+
+/** Views of the last 30 days per public slug, read live from `page_views`. */
+export async function readPostViewCounts(context: DbContext) {
+  const rows = await countPostSlugViews(context.db, lastThirtyDays());
   return new Map(rows.map((row) => [row.slug, row.views]));
+}
+
+/**
+ * The published Posts with the most views of the last 30 days. Both the order
+ * and the numbers come from this site's page views, so they match the Admin's.
+ */
+export async function getPopularPostsByViews(
+  context: DbContext,
+  limit: number,
+): Promise<PostItem[]> {
+  const top = await listTopPostsByViews(context.db, lastThirtyDays(), limit);
+  if (top.length === 0) return [];
+
+  const posts = await PostRepo.findPostsByIds(
+    context.db,
+    top.map((entry) => entry.postId),
+  );
+  const postById = new Map(posts.map((post) => [post.id, post]));
+  const viewsById = new Map(top.map((entry) => [entry.postId, entry.views]));
+  return top.flatMap(({ postId }) => {
+    const post = postById.get(postId);
+    return post ? [{ ...post, viewCount: viewsById.get(postId) ?? 0 }] : [];
+  });
 }
 
 /**
@@ -524,7 +556,7 @@ export async function listAdminPostsPage(
 ) {
   // The list filters and counts in SQL, which compares fingerprints.
   await UnpublishedChangesService.settleFingerprints(context.db);
-  const viewsBySlug = await readViewCounts(context);
+  const viewsBySlug = await readPostViewCounts(context);
   const [rows, statusCounts] = await Promise.all([
     data.sortBy === "viewCount"
       ? getPostsByViews(context, data, viewsBySlug)

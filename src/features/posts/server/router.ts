@@ -11,8 +11,23 @@ import {
   PostWithTocSchema,
 } from "@/features/posts/schema/posts.schema";
 import * as PostService from "@/features/posts/services/posts.service";
-import { postPopularityService } from "@/features/post-popularity/service/post-popularity.service";
 import { publicProcedure } from "@/lib/orpc/procedure";
+
+/**
+ * Adds the views of the last 30 days to public list items, read live from this
+ * site's `page_views` so they match the Admin's numbers. Public items always
+ * have a public slug, so a Post without views is 0.
+ */
+async function withViewCounts<T extends { slug: string }>(
+  context: DbContext,
+  items: T[],
+) {
+  const views = await PostService.readPostViewCounts(context);
+  return items.map((item) => ({
+    ...item,
+    viewCount: views.get(item.slug) ?? 0,
+  }));
+}
 
 const list = publicProcedure
   .route({
@@ -27,10 +42,7 @@ const list = publicProcedure
     const result = await PostService.getPostsCursor(context, input);
     return {
       ...result,
-      items: await postPopularityService.attachViewCounts(
-        context,
-        result.items,
-      ),
+      items: await withViewCounts(context, result.items),
     };
   });
 
@@ -47,10 +59,7 @@ const home = publicProcedure
     const result = await PostService.getHomePosts(context, input.page);
     return {
       ...result,
-      items: await postPopularityService.attachViewCounts(
-        context,
-        result.items,
-      ),
+      items: await withViewCounts(context, result.items),
     };
   });
 
@@ -96,10 +105,7 @@ const pinned = publicProcedure
   })
   .output(z.array(PostItemSchema))
   .handler(async ({ context }) =>
-    postPopularityService.attachViewCounts(
-      context,
-      await PostService.getPinnedPosts(context),
-    ),
+    withViewCounts(context, await PostService.getPinnedPosts(context)),
   );
 
 const popular = publicProcedure
@@ -112,7 +118,7 @@ const popular = publicProcedure
   .input(z.object({ limit: z.number().int().min(1).max(20).optional() }))
   .output(z.array(PostItemSchema))
   .handler(({ context, input }) =>
-    postPopularityService.getPopular(context, input.limit),
+    PostService.getPopularPostsByViews(context, input.limit ?? 5),
   );
 
 export default {

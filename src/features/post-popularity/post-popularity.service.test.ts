@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import type { PostItem } from "@/features/posts/schema/posts.schema";
 import { createPostPopularityService } from "./service/post-popularity.service";
 
 describe("post popularity service", () => {
@@ -27,7 +26,6 @@ describe("post popularity service", () => {
       readStatus: vi.fn(async () => null),
       writeStatus,
       invalidate,
-      getPopularPosts: vi.fn(async () => []),
     });
 
     const result = await service.sync({
@@ -80,7 +78,6 @@ describe("post popularity service", () => {
       readStatus: vi.fn(async () => null),
       writeStatus,
       invalidate: vi.fn(async () => undefined),
-      getPopularPosts: vi.fn(async () => []),
     });
 
     const result = await service.sync({
@@ -153,7 +150,6 @@ describe("post popularity service", () => {
         readStatus: vi.fn(async () => status),
         writeStatus: vi.fn(async () => undefined),
         invalidate,
-        getPopularPosts: vi.fn(async () => []),
       });
       const result = await service.sync({
         env: {},
@@ -215,7 +211,6 @@ describe("post popularity service", () => {
       })),
       writeStatus,
       invalidate: vi.fn(),
-      getPopularPosts: vi.fn(async () => []),
     });
 
     const result = await service.sync({
@@ -231,77 +226,5 @@ describe("post popularity service", () => {
       windowStart: Date.parse("2026-07-24T00:00:00.000Z"),
       windowEnd: Date.parse("2026-08-22T23:59:59.999Z"),
     });
-  });
-
-  it("uses a fresh snapshot to load Posts in ranked order", async () => {
-    const getPopularPosts = vi.fn(
-      async (): Promise<PostItem[]> =>
-        [{ id: 7 }, { id: 3 }] as Array<PostItem>,
-    );
-    const syncedAt = Date.parse("2026-08-22T00:15:00.000Z");
-    const service = createPostPopularityService({
-      now: () => new Date("2026-08-23T00:15:00.000Z"),
-      getPathMetrics: vi.fn(),
-      getDailyViews: vi.fn(),
-      listPublishedPosts: vi.fn(),
-      readSnapshot: vi.fn(async () => ({
-        entries: [
-          { postId: 7, score: 12 },
-          { postId: 3, score: 8 },
-        ],
-        windowStart: Date.parse("2026-07-23T00:00:00.000Z"),
-        windowEnd: Date.parse("2026-08-21T23:59:59.999Z"),
-        syncedAt,
-        daily: [],
-      })),
-      writeSnapshot: vi.fn(),
-      readStatus: vi.fn(),
-      writeStatus: vi.fn(),
-      invalidate: vi.fn(),
-      getPopularPosts,
-    });
-    const context = { env: {} } as DbContext & {
-      executionCtx: ExecutionContext;
-    };
-
-    await expect(service.getPopular(context, 2)).resolves.toEqual([
-      { id: 7, viewCount: 12 },
-      { id: 3, viewCount: 8 },
-    ]);
-    expect(getPopularPosts).toHaveBeenCalledWith(context, {
-      limit: 2,
-      snapshotVersion: syncedAt,
-      postIds: [7, 3],
-    });
-  });
-
-  it("ignores a snapshot older than seven days", async () => {
-    const getPopularPosts = vi.fn(async () => []);
-    const service = createPostPopularityService({
-      now: () => new Date("2026-08-30T00:15:00.001Z"),
-      getPathMetrics: vi.fn(),
-      getDailyViews: vi.fn(),
-      listPublishedPosts: vi.fn(),
-      readSnapshot: vi.fn(async () => ({
-        entries: [{ postId: 7, score: 12 }],
-        windowStart: Date.parse("2026-07-23T00:00:00.000Z"),
-        windowEnd: Date.parse("2026-08-21T23:59:59.999Z"),
-        syncedAt: Date.parse("2026-08-23T00:15:00.000Z"),
-        daily: [],
-      })),
-      writeSnapshot: vi.fn(),
-      readStatus: vi.fn(),
-      writeStatus: vi.fn(),
-      invalidate: vi.fn(),
-      getPopularPosts,
-    });
-
-    await expect(
-      service.getPopular(
-        { env: {} } as DbContext & { executionCtx: ExecutionContext },
-        2,
-      ),
-    ).resolves.toEqual([]);
-    expect(getPopularPosts).not.toHaveBeenCalled();
   });
 });
