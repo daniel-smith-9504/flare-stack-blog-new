@@ -25,33 +25,35 @@ export function AnalyticsPage() {
   const { data, isFetching } = useQuery(analyticsQuery(days));
 
   return (
-    <div className="analytics" data-fetching={isFetching ? "" : undefined}>
-      <header className="analytics-head">
-        <div>
-          <h1 className="analytics-title">{m.admin_analytics_title()}</h1>
-          <p className="analytics-description">
-            {m.admin_analytics_description({ days })}
-          </p>
-        </div>
-        <div className="analytics-ranges" role="group">
-          {RANGES.map((range) => (
-            <Button
-              key={range}
-              size="xs"
-              variant={range === days ? "ink" : "quiet"}
-              onClick={() => setDays(range)}
-            >
-              {m.admin_analytics_range({ days: range })}
-            </Button>
-          ))}
-        </div>
-      </header>
+    <div className="analytics-scroll">
+      <div className="analytics" data-fetching={isFetching ? "" : undefined}>
+        <header className="analytics-head">
+          <div>
+            <h1 className="analytics-title">{m.admin_analytics_title()}</h1>
+            <p className="analytics-description">
+              {m.admin_analytics_description({ days })}
+            </p>
+          </div>
+          <div className="analytics-ranges" role="group">
+            {RANGES.map((range) => (
+              <Button
+                key={range}
+                size="xs"
+                variant={range === days ? "ink" : "quiet"}
+                onClick={() => setDays(range)}
+              >
+                {m.admin_analytics_range({ days: range })}
+              </Button>
+            ))}
+          </div>
+        </header>
 
-      {data ? (
-        <Report report={data} />
-      ) : (
-        <p className="analytics-empty">{m.admin_analytics_loading()}</p>
-      )}
+        {data ? (
+          <Report report={data} />
+        ) : (
+          <p className="analytics-empty">{m.admin_analytics_loading()}</p>
+        )}
+      </div>
     </div>
   );
 }

@@ -19,48 +19,33 @@ import {
 } from "@/features/dashboard/service/dashboard.service";
 import * as FriendLinkRepo from "@/features/friend-links/data/friend-links.data";
 import * as MutedUserService from "@/features/muted-users/service/muted-users.service";
-import * as PostPopularityRepo from "@/features/post-popularity/data/post-popularity.data";
-import { postPopularityService } from "@/features/post-popularity/service/post-popularity.service";
 import * as PostService from "@/features/posts/services/posts.service";
 import * as kvStore from "@/features/cache/kv-store";
-import { serializeKey } from "@/features/cache/serialize";
 import { VERSION_CACHE_KEYS } from "@/features/version/version.schema";
-import {
-  POST_POPULARITY_KEYS,
-  type PostPopularitySnapshot,
-  type PostPopularitySyncStatus,
-} from "@/features/post-popularity/post-popularity.schema";
 import * as PostRevisionRepo from "@/features/posts/data/post-revisions.data";
-import { CommentsTable, PostRevisionsTable, PostsTable } from "@/lib/db/schema";
+import {
+  CommentsTable,
+  PageViewsTable,
+  PostRevisionsTable,
+  PostsTable,
+} from "@/lib/db/schema";
 import { unwrap } from "@/lib/errors";
-
-function popularityStatus(
-  overrides: Partial<PostPopularitySyncStatus> = {},
-): PostPopularitySyncStatus {
-  return {
-    configured: true,
-    expired: false,
-    postCount: 0,
-    lastAttemptAt: 1,
-    lastSuccessAt: 1,
-    expiresAt: null,
-    lastError: null,
-    windowStart: null,
-    windowEnd: null,
-    ...overrides,
-  };
-}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function mockPopularity(
-  status: PostPopularitySyncStatus,
-  snapshot: PostPopularitySnapshot | null,
-) {
-  vi.spyOn(postPopularityService, "getStatusWithSnapshot").mockResolvedValue({
-    status,
-    snapshot,
-  });
+/** A view of `postSlug`, recorded `daysAgo` days back. */
+function view(postSlug: string | null, daysAgo = 0) {
+  return {
+    path: postSlug ? `/post/${postSlug}` : "/",
+    postSlug,
+    visitorId: `anon:${crypto.randomUUID()}`,
+    country: null,
+    region: null,
+    city: null,
+    referrerHost: null,
+    device: "desktop" as const,
+    createdAt: new Date(Date.now() - daysAgo * DAY_MS),
+  };
 }
 
 describe("Dashboard overview", () => {
@@ -612,127 +597,60 @@ describe("Dashboard overview", () => {
     expect(last.nextBeforeId).toBeNull();
   });
 
-  it("ranks the most viewed public posts from the popularity snapshot", async () => {
+  it("ranks the most viewed public posts from this site's page views", async () => {
     const ids: Array<number> = [];
-    for (const title of [
-      "alpha",
-      "beta",
-      "gamma",
-      "delta",
-      "epsilon",
-      "zeta",
-    ]) {
+    for (const title of ["alpha", "gamma"]) {
       ids.push(await publishPost(title));
     }
-    const [alpha, beta, gamma, delta, epsilon, zeta] = ids as [
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-    ];
+    const [alpha, gamma] = ids as [number, number];
     const hidden = await publishPost("hidden");
     unwrap(await PostService.unpublishPost(adminContext, { id: hidden }));
-    mockPopularity(popularityStatus(), {
-      entries: [
-        { postId: hidden, score: 5_000 },
-        { postId: gamma, score: 1_200 },
-        { postId: alpha, score: 900 },
-        { postId: zeta, score: 300 },
-        { postId: beta, score: 120 },
-        { postId: delta, score: 40 },
-        { postId: epsilon, score: 2 },
-      ],
-      windowStart: 1_000,
-      windowEnd: 2_000,
-      syncedAt: Date.now(),
-      daily: [
-        { day: 1_000, views: 40 },
-        { day: 1_000 + DAY_MS, views: 0 },
-        { day: 1_000 + 2 * DAY_MS, views: 7 },
-      ],
-    });
+
+    // One row per statement: D1 caps the bound parameters of a query.
+    for (const row of [
+      ...Array.from({ length: 5 }, () => view(`hidden-${hidden}`)),
+      ...Array.from({ length: 7 }, () => view(`gamma-${gamma}`)),
+      ...Array.from({ length: 4 }, () => view(`alpha-${alpha}`)),
+      view(null),
+    ]) {
+      await adminContext.db.insert(PageViewsTable).values(row);
+    }
 
     const overview = await getDashboardOverview(adminContext);
-    expect(overview.popularity).toMatchObject({
-      state: "ready",
-      windowStart: 1_000,
-      windowEnd: 2_000,
-      totalViews: 7_562,
-      daily: [
-        { day: 1_000, views: 40 },
-        { day: 1_000 + DAY_MS, views: 0 },
-        { day: 1_000 + 2 * DAY_MS, views: 7 },
-      ],
-    });
+    expect(overview.popularity.state).toBe("ready");
+    expect(overview.popularity.totalViews).toBe(17);
+    expect(overview.popularity.daily).toHaveLength(30);
+    expect(
+      overview.popularity.daily.reduce((sum, point) => sum + point.views, 0),
+    ).toBe(17);
     expect(
       overview.popularity.topPosts.map((post) => [post.title, post.views]),
     ).toEqual([
-      ["gamma", 1_200],
-      ["alpha", 900],
-      ["zeta", 300],
-      ["beta", 120],
-      ["delta", 40],
+      ["gamma", 7],
+      ["alpha", 4],
     ]);
     expect(overview.popularity.topPosts[0]?.slug).toBe(`gamma-${gamma}`);
   });
 
-  it("keeps an expired snapshot visible and marks it", async () => {
-    const postId = await publishPost("stale");
-    mockPopularity(popularityStatus({ expired: true }), {
-      entries: [{ postId, score: 10 }],
-      windowStart: 1,
-      windowEnd: 2,
-      syncedAt: 0,
-      daily: [{ day: 0, views: 3 }],
-    });
+  it("leaves views older than the window out", async () => {
+    await adminContext.db
+      .insert(PageViewsTable)
+      .values([view(null, 40), view(null, 31), view(null, 0)]);
 
     const overview = await getDashboardOverview(adminContext);
-    expect(overview.popularity.state).toBe("expired");
-    expect(overview.popularity.totalViews).toBe(10);
-    expect(overview.popularity.daily).toEqual([{ day: 0, views: 3 }]);
-    expect(overview.popularityAlert).toBe("expired");
+    expect(overview.popularity.totalViews).toBe(1);
   });
 
-  it("reads a snapshot stored before the daily series existed as having none", async () => {
-    const postId = await publishPost("legacy");
-    await adminContext.env.KV.put(
-      serializeKey(POST_POPULARITY_KEYS.snapshot),
-      JSON.stringify({
-        entries: [{ postId, score: 11 }],
-        windowStart: 1_000,
-        windowEnd: 2_000,
-        syncedAt: Date.now(),
-      }),
-    );
-
-    mockPopularity(
-      popularityStatus(),
-      await PostPopularityRepo.readSnapshot(adminContext.env),
-    );
-
+  it("reports no views yet without a popularity snapshot", async () => {
     const overview = await getDashboardOverview(adminContext);
     expect(overview.popularity.state).toBe("ready");
-    expect(overview.popularity.totalViews).toBe(11);
-    expect(overview.popularity.daily).toEqual([]);
-  });
-
-  it("reports no traffic without a snapshot", async () => {
-    mockPopularity(popularityStatus({ configured: false }), null);
-    let overview = await getDashboardOverview(adminContext);
-    expect(overview.popularity).toEqual({
-      state: "unconfigured",
-      windowStart: null,
-      windowEnd: null,
-      totalViews: 0,
-      topPosts: [],
-      daily: [],
-    });
-
-    mockPopularity(popularityStatus(), null);
-    overview = await getDashboardOverview(adminContext);
-    expect(overview.popularity.state).toBe("missing");
+    expect(overview.popularity.totalViews).toBe(0);
+    expect(overview.popularity.topPosts).toEqual([]);
+    expect(overview.popularity.daily).toHaveLength(30);
+    expect(overview.popularity.daily.every((point) => point.views === 0)).toBe(
+      true,
+    );
+    expect(overview.popularityAlert).toBeNull();
   });
 
   it("announces a newer release only from the cached version check", async () => {
@@ -774,16 +692,6 @@ describe("Dashboard overview", () => {
     expect(overview.update).toBeNull();
     expect(fetch).not.toHaveBeenCalled();
     await kvStore.remove(adminContext, VERSION_CACHE_KEYS.latestRelease);
-  });
-
-  it("surfaces a failed popularity sync", async () => {
-    mockPopularity(
-      popularityStatus({ lastSuccessAt: null, lastError: "page_views 502" }),
-      null,
-    );
-
-    const overview = await getDashboardOverview(adminContext);
-    expect(overview.popularityAlert).toBe("failed");
   });
 
   it("surfaces default site identity and missing admin email", async () => {

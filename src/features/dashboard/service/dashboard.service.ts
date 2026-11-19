@@ -1,3 +1,4 @@
+import { getAnalyticsReport } from "@/features/analytics/service/analytics.service";
 import { publicCommentPath } from "@/features/comments/comment-url";
 import { resolveSystemConfig } from "@/features/config/config.resolve";
 import * as ConfigRepo from "@/features/config/data/config.data";
@@ -9,11 +10,7 @@ import {
   DASHBOARD_RECENT_COMMENT_DAYS,
   DASHBOARD_TOP_POST_CANDIDATES,
   DASHBOARD_WRITING_LOOKBACK_DAYS,
-  popularityAlertFromStatus,
-  popularityState,
-  rankTopPosts,
   siteIdentityIsDefault,
-  totalViews,
 } from "@/features/dashboard/dashboard";
 import {
   DASHBOARD_RECENT_POSTS_LIMIT,
@@ -27,45 +24,27 @@ import type {
 import * as FriendLinkRepo from "@/features/friend-links/data/friend-links.data";
 import { momentHeading } from "@/features/moments/utils/moment-heading";
 import { isMuted } from "@/features/muted-users/muted-users";
-import { postPopularityService } from "@/features/post-popularity/service/post-popularity.service";
 import * as PostRepo from "@/features/posts/data/posts.data";
 import * as UnpublishedChangesService from "@/features/posts/services/unpublished-changes.service";
 import { versionChecker } from "@/features/version/service/version.service";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * Views of the last 30 days and the Posts that drew them, from this site's
+ * own `page_views`. Nothing external can be unconfigured, missing or expired.
+ */
 async function getPopularity(context: DbContext) {
-  const { status, snapshot } =
-    await postPopularityService.getStatusWithSnapshot(context);
-  const state = popularityState(status, snapshot !== null);
-  if (state === "unconfigured" || state === "missing" || !snapshot) {
-    return {
-      alert: popularityAlertFromStatus(status),
-      popularity: {
-        state,
-        windowStart: null,
-        windowEnd: null,
-        totalViews: 0,
-        topPosts: [],
-        daily: [],
-      },
-    };
-  }
-
-  const candidates = snapshot.entries.slice(0, DASHBOARD_TOP_POST_CANDIDATES);
-  const publicPosts = await DashboardRepo.listPublicPostsByIds(
-    context.db,
-    candidates.map((entry) => entry.postId),
-  );
+  const report = await getAnalyticsReport(context, { days: 30 });
   return {
-    alert: popularityAlertFromStatus(status),
+    alert: null,
     popularity: {
-      state,
-      windowStart: snapshot.windowStart,
-      windowEnd: snapshot.windowEnd,
-      totalViews: totalViews(snapshot.entries),
-      topPosts: rankTopPosts(candidates, publicPosts),
-      daily: snapshot.daily,
+      state: "ready" as const,
+      windowStart: report.daily[0]?.day ?? null,
+      windowEnd: report.generatedAt,
+      totalViews: report.summary.views,
+      topPosts: report.topPosts.slice(0, DASHBOARD_TOP_POST_CANDIDATES),
+      daily: report.daily,
     },
   };
 }

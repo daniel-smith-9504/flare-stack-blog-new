@@ -102,8 +102,12 @@ export function postSlugOfPath(path: string): string | null {
   return postSlugFromPath(path);
 }
 
+/**
+ * Midnight of the first of the trailing `days` calendar days, today included,
+ * so the daily series has one point per day of the range.
+ */
 export function analyticsSince(days: number, now = Date.now()): Date {
-  return new Date(now - days * DAY_MS);
+  return new Date(utcDayStart(now - (days - 1) * DAY_MS));
 }
 
 /** UTC midnight of the day `timestamp` falls in, in milliseconds. */

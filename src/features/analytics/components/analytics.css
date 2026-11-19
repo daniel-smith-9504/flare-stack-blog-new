@@ -1,6 +1,20 @@
+/*
+ * The Admin's workspace frame does not scroll itself; the page brings its
+ * own scroller, as the overview does.
+ */
+.analytics-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--admin-line-strong) transparent;
+}
 .analytics {
   container-type: inline-size;
-  padding-bottom: 32px;
+  width: 100%;
+  max-width: var(--admin-page-max);
+  margin: 0 auto;
+  padding: 26px var(--admin-page-x) 32px;
   transition: opacity 0.15s ease;
 }
 .analytics[data-fetching] {
