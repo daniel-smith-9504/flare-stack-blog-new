@@ -506,7 +506,7 @@ export const GetPostsInputSchema = z.strictObject({
     .enum(POST_SORT_KEYS)
     .optional()
     .describe(
-      "Sort key. Defaults to updatedAt. createdAt is when the post was first created and never changes. commentCount sorts by the published comments; viewCount by the views of the last 30 days, and falls back to updatedAt while popularity is not ready. Ties are broken by id in the sortDir direction.",
+      "Sort key. Defaults to updatedAt. createdAt is when the post was first created and never changes. commentCount sorts by the published comments; viewCount by the views of the last 30 days, read live from this site's own statistics. Ties are broken by id in the sortDir direction.",
     ),
   includeContent: z
     .boolean()
@@ -548,7 +548,7 @@ const AdminPostListItemSchema = z.object({
     .nonnegative()
     .optional()
     .describe(
-      "Page views of the last 30 days. Absent when the post has no public page or the page's popularity is not ready; absent is unknown, not 0.",
+      "Page views of the last 30 days, read live from this site's own statistics. Absent when the post has no public page; absent is unknown, not 0.",
     ),
   contentJson: NullableJsonContentSchema.optional().describe(
     "Only returned when the request asks for includeContent=true outside the public taxonomy scope.",
@@ -586,7 +586,7 @@ export const AdminPostListPageSchema = z.object({
   popularity: z
     .enum(["unconfigured", "missing", "expired", "ready"])
     .describe(
-      "Whether viewCount can be read: only ready carries it. missing is no snapshot yet, expired a snapshot older than a week.",
+      "Whether viewCount can be read. Views now come from this site's own statistics, so it is always ready; the other states remain for older clients.",
     ),
   statusCounts: AdminPostStatusCountsSchema.describe(
     "Counts matching search, publicOnly, taxonomy scope and the category and tag filters before status filtering or pagination.",

@@ -7,13 +7,8 @@ import {
 } from "tests/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as CommentService from "@/features/comments/comments.service";
-import type {
-  PostPopularitySnapshot,
-  PostPopularitySyncStatus,
-} from "@/features/post-popularity/post-popularity.schema";
-import { postPopularityService } from "@/features/post-popularity/service/post-popularity.service";
 import * as PostService from "@/features/posts/services/posts.service";
-import { PostsTable } from "@/lib/db/schema";
+import { PageViewsTable, PostsTable } from "@/lib/db/schema";
 import { unwrap } from "@/lib/errors";
 
 /**
@@ -21,44 +16,7 @@ import { unwrap } from "@/lib/errors";
  * the last 30 days, and the sorts by each.
  */
 
-function status(
-  overrides: Partial<PostPopularitySyncStatus> = {},
-): PostPopularitySyncStatus {
-  return {
-    configured: true,
-    expired: false,
-    postCount: 0,
-    lastAttemptAt: 1,
-    lastSuccessAt: 1,
-    expiresAt: null,
-    lastError: null,
-    windowStart: null,
-    windowEnd: null,
-    ...overrides,
-  };
-}
-
-function snapshot(
-  entries: Array<{ postId: number; score: number }>,
-): PostPopularitySnapshot {
-  return {
-    entries,
-    windowStart: 0,
-    windowEnd: 1,
-    syncedAt: Date.now(),
-    daily: [],
-  };
-}
-
-function mockPopularity(
-  popularityStatus: PostPopularitySyncStatus,
-  popularitySnapshot: PostPopularitySnapshot | null,
-) {
-  vi.spyOn(postPopularityService, "getStatusWithSnapshot").mockResolvedValue({
-    status: popularityStatus,
-    snapshot: popularitySnapshot,
-  });
-}
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 describe("Admin post list metrics", () => {
   let adminContext: ReturnType<typeof createAdminTestContext>;
@@ -78,7 +36,6 @@ describe("Admin post list metrics", () => {
     });
     userContext = createAuthTestContext({ session: userSession });
     await seedUser(userContext.db, userSession.user);
-    mockPopularity(status({ configured: false }), null);
   });
 
   async function createPost(title: string, publish: boolean) {
@@ -91,6 +48,27 @@ describe("Admin post list metrics", () => {
     );
     if (publish) unwrap(await PostService.publishPost(adminContext, { id }));
     return id;
+  }
+
+  async function publicSlugOf(postId: number) {
+    const [row] = await adminContext.db
+      .select({ slug: PostsTable.publicSlug })
+      .from(PostsTable)
+      .where(eq(PostsTable.id, postId));
+    if (!row?.slug) throw new Error(`Post ${postId} has no public slug`);
+    return row.slug;
+  }
+
+  /** A page view of a Post, recorded as one of its visitors would. */
+  async function view(postId: number, createdAt = new Date()) {
+    const slug = await publicSlugOf(postId);
+    await adminContext.db.insert(PageViewsTable).values({
+      path: `/post/${encodeURIComponent(slug)}`,
+      postSlug: slug,
+      visitorId: `anon:${crypto.randomUUID()}`,
+      device: "desktop",
+      createdAt,
+    });
   }
 
   async function comment(postId: number, content: string) {
@@ -199,41 +177,38 @@ describe("Admin post list metrics", () => {
   });
 
   describe("viewCount", () => {
-    it("is absent, with the reason, until popularity is ready", async () => {
+    it("counts views recorded today, not a daily snapshot", async () => {
       const id = await createPost("published", true);
-      for (const [popularityStatus, popularitySnapshot, state] of [
-        [status({ configured: false }), null, "unconfigured"],
-        [status(), null, "missing"],
-        [
-          status({ expired: true }),
-          snapshot([{ postId: id, score: 9 }]),
-          "expired",
-        ],
-      ] as const) {
-        mockPopularity(popularityStatus, popularitySnapshot);
-        const page = await list({});
-        expect(page.popularity).toBe(state);
-        expect(page.items.every((item) => item.viewCount === undefined)).toBe(
-          true,
-        );
-      }
-    });
-
-    it("carries the 30 day views of a published Post, 0 when the snapshot has none, nothing for a draft", async () => {
-      const viewed = await createPost("viewed", true);
-      const unseen = await createPost("unseen", true);
-      const draft = await createPost("draft", false);
-      mockPopularity(status(), snapshot([{ postId: viewed, score: 42 }]));
+      await view(id);
+      await view(id);
 
       const page = await list({});
       expect(page.popularity).toBe("ready");
+      expect(page.items.find((item) => item.id === id)?.viewCount).toBe(2);
+    });
+
+    it("is 0 for a published Post without views, absent for a draft", async () => {
+      const viewed = await createPost("viewed", true);
+      const unseen = await createPost("unseen", true);
+      const draft = await createPost("draft", false);
+      await view(viewed);
+
+      const page = await list({});
       const views = new Map(
         page.items.map((item) => [item.id, item.viewCount]),
       );
-      expect(views.get(viewed)).toBe(42);
+      expect(views.get(viewed)).toBe(1);
       expect(views.get(unseen)).toBe(0);
       expect(views.has(draft)).toBe(true);
       expect(views.get(draft)).toBeUndefined();
+    });
+
+    it("counts only the last 30 days", async () => {
+      const id = await createPost("old", true);
+      await view(id, new Date(Date.now() - 31 * DAY_MS));
+
+      const page = await list({});
+      expect(page.items.find((item) => item.id === id)?.viewCount).toBe(0);
     });
 
     it("sorts by it in both directions, drafts and unseen Posts last, ties by id", async () => {
@@ -241,13 +216,8 @@ describe("Admin post list metrics", () => {
       const high = await createPost("high", true);
       const unseen = await createPost("unseen", true);
       const draft = await createPost("draft", false);
-      mockPopularity(
-        status(),
-        snapshot([
-          { postId: high, score: 90 },
-          { postId: low, score: 3 },
-        ]),
-      );
+      for (let i = 0; i < 3; i++) await view(low);
+      for (let i = 0; i < 9; i++) await view(high);
 
       const desc = await list({ sortBy: "viewCount", sortDir: "DESC" });
       expect(desc.items.map((item) => item.id)).toEqual([
@@ -270,10 +240,9 @@ describe("Admin post list metrics", () => {
       for (const title of ["a", "b", "c", "d"])
         ids.push(await createPost(title, true));
       const draft = await createPost("draft", false);
-      mockPopularity(
-        status(),
-        snapshot(ids.map((postId, index) => ({ postId, score: index + 1 }))),
-      );
+      for (const [index, id] of ids.entries()) {
+        for (let i = 0; i <= index; i++) await view(id);
+      }
 
       const first = await list({
         sortBy: "viewCount",
@@ -298,19 +267,6 @@ describe("Admin post list metrics", () => {
       expect([...first.items, ...second.items].map((i) => i.id)).not.toContain(
         draft,
       );
-    });
-
-    it("falls back to the last edit while views are not ready", async () => {
-      const older = await createPost("older", true);
-      const newer = await createPost("newer", true);
-      await adminContext.db
-        .update(PostsTable)
-        .set({ updatedAt: new Date(Date.now() + 5_000) })
-        .where(eq(PostsTable.id, newer));
-
-      const page = await list({ sortBy: "viewCount" });
-      expect(page.popularity).toBe("unconfigured");
-      expect(page.items.map((item) => item.id)).toEqual([newer, older]);
     });
   });
 });

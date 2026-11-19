@@ -192,13 +192,18 @@ export async function getPosts(
   return posts;
 }
 
-/** The ids of every Post the filters select, in no particular order. */
-export async function getPostIds(db: DB, filters: PostFilters = {}) {
-  const rows = await db
-    .select({ id: PostsTable.id })
+/**
+ * Every Post the filters select, in no particular order: its id and the slug
+ * its page views are recorded under.
+ */
+export async function listPostViewRefs(
+  db: DB,
+  filters: PostFilters = {},
+): Promise<Array<{ id: number; publicSlug: string | null }>> {
+  return db
+    .select({ id: PostsTable.id, publicSlug: PostsTable.publicSlug })
     .from(PostsTable)
     .where(buildPostWhereClause(filters));
-  return rows.map((row) => row.id);
 }
 
 /**

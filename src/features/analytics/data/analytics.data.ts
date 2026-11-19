@@ -53,6 +53,27 @@ export async function countPathMetrics(
   }));
 }
 
+/** Views per Post slug of a window, the Admin list's live counts. */
+export async function countPostSlugViews(
+  db: DB,
+  window: { since: Date; until: Date },
+): Promise<Array<{ slug: string; views: number }>> {
+  const rows = await db
+    .select({ slug: PageViewsTable.postSlug, views: count() })
+    .from(PageViewsTable)
+    .where(
+      and(
+        gte(PageViewsTable.createdAt, window.since),
+        lt(PageViewsTable.createdAt, window.until),
+        isNotNull(PageViewsTable.postSlug),
+      ),
+    )
+    .groupBy(PageViewsTable.postSlug);
+  return rows.flatMap((row) =>
+    row.slug ? [{ slug: row.slug, views: row.views }] : [],
+  );
+}
+
 /** Site-wide views per UTC day, oldest first. */
 export async function countDailyViews(
   db: DB,
