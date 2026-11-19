@@ -48,9 +48,6 @@ export const router = {
   cache: lazy(() => import("@/features/cache/server/router"), {
     prefix: "/admin/cache",
   }),
-  version: lazy(() => import("@/features/version/server/router"), {
-    prefix: "/admin/version",
-  }),
   webhooks: lazy(() => import("@/features/webhook/server/router"), {
     prefix: "/admin/webhooks",
   }),

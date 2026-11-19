@@ -78,8 +78,6 @@ describe("OpenAPI document", () => {
       ["post", "/admin/email/test"],
       ["post", "/admin/search/rebuild"],
       ["post", "/admin/cache/invalidate"],
-      ["get", "/admin/version"],
-      ["post", "/admin/version/check"],
       ["post", "/admin/webhooks/test"],
       ["post", "/admin/webhooks/telegram/chats"],
     ];
@@ -184,31 +182,6 @@ describe("config and maintenance", () => {
     const { status, body } = await call("POST", "/admin/cache/invalidate");
     expect(status).toBe(200);
     expect(body).toEqual({ success: true });
-  });
-
-  it("returns the update check, cached or forced", async () => {
-    vi.spyOn(globalThis, "fetch").mockImplementation(
-      async () =>
-        new Response(null, {
-          status: 302,
-          headers: {
-            location: "/du2333/flare-stack-blog/releases/tag/v99.0.0",
-          },
-        }),
-    );
-    for (const [method, path] of [
-      ["GET", "/admin/version"],
-      ["POST", "/admin/version/check"],
-    ] as const) {
-      const { status, body } = await call(method, path);
-      expect(status, path).toBe(200);
-      expect(body, path).toMatchObject({
-        latestVersion: "v99.0.0",
-        hasUpdate: true,
-        releaseUrl: expect.stringContaining("v99.0.0"),
-      });
-    }
-    vi.restoreAllMocks();
   });
 });
 

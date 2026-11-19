@@ -26,7 +26,6 @@ import {
   accessSectionFromPath,
   settingsSectionFromPath,
 } from "@/features/config/components/admin/settings-pages";
-import { useVersionCheck } from "@/features/version/hooks/use-version-check";
 import { CACHE_CONTROL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages";
@@ -84,7 +83,6 @@ function pageTitleFromMatches(matches: ReturnType<typeof useMatches>): string {
 function AdminLayout() {
   const pathname = useLocation({ select: (location) => location.pathname });
   const editorWorkspace = isPostEditorPath(pathname);
-  useVersionCheck();
 
   // The editor is a workspace of its own: no sidebar and no top bar, and it
   // brings its own header at every width.

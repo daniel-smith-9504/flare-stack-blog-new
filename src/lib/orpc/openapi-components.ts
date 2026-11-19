@@ -35,7 +35,6 @@ import {
   StatedSaveTokenSchema,
 } from "@/features/posts/schema/posts.schema";
 import { TagSelectSchema } from "@/features/tags/tags.schema";
-import { UpdateCheckResultSchema } from "@/features/version/update-check.schema";
 import { coercedDate } from "./dates";
 
 const TipTapNodeSchema = NullableJsonContentSchema.unwrap();
@@ -102,7 +101,6 @@ export const OPENAPI_COMPONENTS: NonNullable<
     schema: PostPopularitySyncStatusSchema,
     strategy: "output",
   },
-  UpdateCheckResult: { schema: UpdateCheckResultSchema, strategy: "output" },
   // The body of an error an operation does not declare.
   UndefinedError: { error: "UndefinedError" },
 };

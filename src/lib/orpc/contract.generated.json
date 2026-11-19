@@ -1107,58 +1107,6 @@
       }
     }
   },
-  "version": {
-    "check": {
-      "~orpc": {
-        "errorMap": {},
-        "meta": {},
-        "route": {
-          "method": "GET",
-          "path": "/admin/version"
-        }
-      }
-    },
-    "forceCheck": {
-      "~orpc": {
-        "errorMap": {},
-        "meta": {},
-        "route": {
-          "method": "POST",
-          "path": "/admin/version/check"
-        }
-      }
-    },
-    "dismissUpdate": {
-      "~orpc": {
-        "errorMap": {},
-        "meta": {},
-        "route": {
-          "method": "POST",
-          "path": "/admin/version/dismissed"
-        }
-      }
-    },
-    "upgradeNotice": {
-      "~orpc": {
-        "errorMap": {},
-        "meta": {},
-        "route": {
-          "method": "GET",
-          "path": "/admin/version/upgrade-notice"
-        }
-      }
-    },
-    "acknowledgeUpgrade": {
-      "~orpc": {
-        "errorMap": {},
-        "meta": {},
-        "route": {
-          "method": "POST",
-          "path": "/admin/version/upgrade-notice/acknowledge"
-        }
-      }
-    }
-  },
   "webhooks": {
     "test": {
       "~orpc": {

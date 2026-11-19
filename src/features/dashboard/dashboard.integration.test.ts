@@ -5,7 +5,7 @@ import {
   createMockSession,
   seedUser,
 } from "tests/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import * as CommentService from "@/features/comments/comments.service";
 import { DEFAULT_CONFIG } from "@/features/config/config.schema";
 import * as ConfigRepo from "@/features/config/data/config.data";
@@ -20,8 +20,6 @@ import {
 import * as FriendLinkRepo from "@/features/friend-links/data/friend-links.data";
 import * as MutedUserService from "@/features/muted-users/service/muted-users.service";
 import * as PostService from "@/features/posts/services/posts.service";
-import * as kvStore from "@/features/cache/kv-store";
-import { VERSION_CACHE_KEYS } from "@/features/version/version.schema";
 import * as PostRevisionRepo from "@/features/posts/data/post-revisions.data";
 import {
   CommentsTable,
@@ -651,47 +649,6 @@ describe("Dashboard overview", () => {
       true,
     );
     expect(overview.popularityAlert).toBeNull();
-  });
-
-  it("announces a newer release only from the cached version check", async () => {
-    const fetch = vi.spyOn(globalThis, "fetch");
-    let overview = await getDashboardOverview(adminContext);
-    expect(overview.update).toBeNull();
-
-    await kvStore.put(
-      adminContext,
-      VERSION_CACHE_KEYS.latestRelease,
-      JSON.stringify({
-        latestVersion: "v99.0.0",
-        releaseUrl:
-          "https://github.com/du2333/flare-stack-blog/releases/tag/v99.0.0",
-        notesAvailable: false,
-        notesSince: __APP_VERSION__,
-        entries: [],
-      }),
-    );
-    overview = await getDashboardOverview(adminContext);
-    expect(overview.update).toEqual({
-      latestVersion: "v99.0.0",
-      releaseUrl:
-        "https://github.com/du2333/flare-stack-blog/releases/tag/v99.0.0",
-    });
-
-    await kvStore.put(
-      adminContext,
-      VERSION_CACHE_KEYS.latestRelease,
-      JSON.stringify({
-        latestVersion: `v${__APP_VERSION__}`,
-        releaseUrl: `https://github.com/du2333/flare-stack-blog/releases/tag/v${__APP_VERSION__}`,
-        notesAvailable: false,
-        notesSince: __APP_VERSION__,
-        entries: [],
-      }),
-    );
-    overview = await getDashboardOverview(adminContext);
-    expect(overview.update).toBeNull();
-    expect(fetch).not.toHaveBeenCalled();
-    await kvStore.remove(adminContext, VERSION_CACHE_KEYS.latestRelease);
   });
 
   it("surfaces default site identity and missing admin email", async () => {

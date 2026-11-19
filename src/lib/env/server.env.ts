@@ -15,8 +15,6 @@ const serverEnvSchema = z.object({
   DOMAIN: domainSchema,
   ENVIRONMENT: z.enum(["dev", "prod", "test"]).optional(),
   TURNSTILE_SECRET_KEY: z.string().optional(),
-  // Checked where it is used: a value that is not https is ignored there.
-  UPDATE_SOURCE_URL: z.string().optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

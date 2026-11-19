@@ -15,7 +15,6 @@ import {
   useState,
 } from "react";
 import type { DashboardOverview } from "@/features/dashboard/dashboard.schema";
-import { UpgradeNotice } from "@/features/version/components/upgrade-notice";
 import { settingsNotices } from "@/features/dashboard/settings-notices";
 import { dashboardOverviewQuery } from "@/features/dashboard/queries";
 import { buildWritingCalendar } from "@/features/dashboard/writing-calendar";
@@ -37,7 +36,6 @@ import { riseOrder } from "@/components/admin/rise";
 import { Count, OverviewCard, TimeIcon } from "./overview-card";
 import { OverviewHero } from "./overview-hero";
 import { OverviewComments, OverviewFriendLinks } from "./overview-inbox";
-import { OverviewUpdate } from "./overview-update";
 import { TrendChart } from "./trend-chart";
 import "./overview.css";
 
@@ -71,9 +69,6 @@ export function OverviewPage() {
           </div>
           <Notices data={data} />
         </header>
-
-        <OverviewUpdate />
-        <UpgradeNotice />
 
         <div className="overview-grid">
           <div className="overview-col">

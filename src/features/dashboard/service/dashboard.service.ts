@@ -26,7 +26,6 @@ import { momentHeading } from "@/features/moments/utils/moment-heading";
 import { isMuted } from "@/features/muted-users/muted-users";
 import * as PostRepo from "@/features/posts/data/posts.data";
 import * as UnpublishedChangesService from "@/features/posts/services/unpublished-changes.service";
-import { versionChecker } from "@/features/version/service/version.service";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -63,7 +62,6 @@ export async function getDashboardOverview(
 
   const [
     { alert, popularity },
-    cachedUpdate,
     postCounts,
     commentCounts,
     friendLinkCounts,
@@ -76,7 +74,6 @@ export async function getDashboardOverview(
     writingActivity,
   ] = await Promise.all([
     getPopularity(context),
-    versionChecker.cached(context),
     PostRepo.getAdminPostStatusCounts(db),
     DashboardRepo.countPublicComments(db, recentCommentsSince),
     FriendLinkRepo.getFriendLinkStatusCounts(db),
@@ -99,12 +96,6 @@ export async function getDashboardOverview(
     popularityAlert: alert,
     adminEmailNeedsSetup: adminEmailNeedsSetup(config),
     defaultSiteIdentity: siteIdentityIsDefault(config.site),
-    update: cachedUpdate?.hasUpdate
-      ? {
-          latestVersion: cachedUpdate.latestVersion,
-          releaseUrl: cachedUpdate.releaseUrl,
-        }
-      : null,
     stats: {
       publishedPosts: postCounts.published,
       draftPosts: postCounts.draft,
