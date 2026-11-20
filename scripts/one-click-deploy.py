@@ -9,8 +9,9 @@ Run it in a terminal:
 
 Before asking for credentials the script prints the three things the user has
 to prepare: the GitHub OAuth App link, the R2/GitHub binding reminder, and the
-.git URL of their own fork. It then asks for the Cloudflare email + Global API
-Key and the OAuth App's Client ID/Secret, and runs on its own:
+.git URL of their own fork. It then asks for the .git URL, the domain the blog
+will be served from, the Cloudflare email + Global API Key and the OAuth App's
+Client ID/Secret, and runs on its own:
 
   - finds the Worker whose Workers Builds configuration watches that repo;
   - creates D1, KV, R2 and the queue, named after the Worker;
@@ -100,7 +101,7 @@ def _as_list(value: Any) -> List[Any]:
 
 def _require_tty(label: str) -> None:
     if not sys.stdin.isatty():
-        fail(f"{label} 需要在终端中交互输入，或通过命令行参数/环境变量提供。")
+        fail(f"{label}需要在终端中交互输入，或通过命令行参数/环境变量提供。")
 
 
 def text_line(label: str) -> str:
@@ -133,9 +134,10 @@ def print_prerequisites() -> None:
         "   同时把 GitHub 账号连接到 Cloudflare，把你的 fork 连接成 Worker（Workers Builds）："
     )
     log(f"   {WORKERS_URL}")
-    log("   并确认博客域名已绑定到这个 Worker（脚本会自动读取；没有会再询问）。\n")
-    log("3. 准备好你自己名下的 fork 仓库地址，必须以 .git 结尾，例如：")
-    log("   https://github.com/你的用户名/flare-stack-blog.git\n")
+    log("   并确认这个域名已经接入 Cloudflare。\n")
+    log("3. 准备好你自己名下的 fork 仓库地址（必须以 .git 结尾）和部署后的域名，例如：")
+    log("   https://github.com/你的用户名/flare-stack-blog.git")
+    log("   blog.example.com\n")
 
 
 # --- Parsing and validation ----------------------------------------------
@@ -177,12 +179,13 @@ def parse_args() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "运行前脚本会打印 GitHub OAuth App 链接、R2/GitHub 绑定提醒，"
-            "并要求输入你自己 fork 仓库的 .git 地址。\n\n"
+            "并要求输入你自己 fork 仓库的 .git 地址和部署后的域名。\n\n"
             "示例：\n"
             "  python3 scripts/one-click-deploy.py\n"
             "  python3 scripts/one-click-deploy.py --dry-run\n"
             "  python3 scripts/one-click-deploy.py \\\n"
             "    --repo https://github.com/you/flare-stack-blog.git \\\n"
+            "    --domain blog.example.com \\\n"
             "    --email you@example.com --api-key ... \\\n"
             "    --github-id ... --github-secret ..."
         ),
@@ -216,7 +219,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--domain",
-        help="覆盖自动检测到的博客域名（或环境变量 DOMAIN）",
+        help="部署后的博客域名，例如 blog.example.com（或环境变量 DOMAIN）",
     )
     parser.add_argument(
         "--dry-run",
@@ -233,6 +236,11 @@ def read_inputs(args: argparse.Namespace) -> Dict[str, Any]:
     if not repo_raw:
         repo_raw = text_line("GitHub fork 仓库地址（.git 结尾）")
     repo = parse_repo(repo_raw)
+
+    domain = (args.domain or os.environ.get("DOMAIN", "")).strip()
+    if not domain:
+        domain = text_line("部署后的博客域名（例如 blog.example.com）")
+    validate_domain(domain)
 
     email = (args.email or os.environ.get("CLOUDFLARE_EMAIL", "")).strip()
     if not email:
@@ -254,10 +262,6 @@ def read_inputs(args: argparse.Namespace) -> Dict[str, Any]:
     if not github_secret:
         github_secret = secret_line("GitHub OAuth App Client Secret")
 
-    domain = (args.domain or os.environ.get("DOMAIN", "")).strip()
-    if domain:
-        validate_domain(domain)
-
     account_id = (
         args.account or os.environ.get("CLOUDFLARE_ACCOUNT_ID", "")
     ).strip()
@@ -269,7 +273,7 @@ def read_inputs(args: argparse.Namespace) -> Dict[str, Any]:
         "accountId": account_id or None,
         "githubId": github_id,
         "githubSecret": github_secret,
-        "domain": domain or None,
+        "domain": domain,
     }
 
 
@@ -462,65 +466,6 @@ def find_worker_for_repo(
             "请只保留一个连接后重试。"
         )
     return matches[0]
-
-
-def environment_value(variables: Any, key: str) -> Optional[str]:
-    if not isinstance(variables, dict):
-        return None
-    value = variables.get(key)
-    if isinstance(value, str):
-        return value
-    if isinstance(value, dict):
-        candidate = value.get("value")
-        if isinstance(candidate, str):
-            return candidate
-    return None
-
-
-def resolve_domain(
-    auth: Dict[str, str],
-    account_id: str,
-    worker_name: str,
-    config: Any,
-    override: Optional[str],
-) -> Tuple[str, Optional[str]]:
-    if override:
-        return override, None
-
-    attached: List[Dict[str, Any]] = []
-    try:
-        rows = _as_list(api(auth, "GET", f"/accounts/{account_id}/workers/domains"))
-        attached = [
-            row
-            for row in rows
-            if isinstance(row, dict)
-            and row.get("service") == worker_name
-            and row.get("hostname")
-        ]
-    except Exception:
-        # The domain can still come from the build variables below.
-        pass
-
-    production = next(
-        (row for row in attached if row.get("environment") == "production"),
-        None,
-    )
-    chosen = production or (attached[0] if attached else None)
-    if chosen:
-        return str(chosen["hostname"]), None
-
-    settings = config.get("production_settings") if isinstance(config, dict) else None
-    variables = settings.get("environment_variables") if isinstance(settings, dict) else None
-    configured = environment_value(variables, "DOMAIN")
-    # cloudflare.config.ts turns DOMAIN into a custom domain; a workers.dev
-    # hostname there would fail the deploy.
-    if configured and not configured.endswith(".workers.dev"):
-        return configured, None
-
-    return (
-        "",
-        "未检测到已绑定的域名，请用 --domain 指定或给 Worker 绑定自定义域名",
-    )
 
 
 def find_zone(
@@ -918,49 +863,29 @@ def main() -> int:
     log(f"找到 Worker：{worker['workerName']}（tag {worker['workerTag']}）")
 
     names = resource_names(worker["workerName"])
-    domain, note = resolve_domain(
-        auth,
-        account_id,
-        worker["workerName"],
-        worker["config"],
-        inputs["domain"],
-    )
-
-    if not domain and not args.dry_run:
-        if not sys.stdin.isatty():
-            fail("没有检测到博客域名。请给 Worker 绑定自定义域名，或用 --domain 指定。")
-        domain = text_line(
-            "没有检测到已绑定的域名，请输入博客域名（例如 blog.example.com）"
+    domain = str(inputs["domain"])
+    validate_domain(domain)
+    zone = find_zone(auth, account_id, domain)
+    if not zone:
+        fail(
+            f"域名「{domain}」不在这个 Cloudflare 账户中。"
+            "请先把域名接入 Cloudflare，或换一个域名。"
         )
-        validate_domain(domain)
+    if zone.get("status") != "active":
+        log(
+            f"警告：DNS 区域 {zone.get('name')} 的状态是 {zone.get('status')}，"
+            "证书签发可能较晚。"
+        )
 
-    if domain:
-        validate_domain(domain)
-        zone = find_zone(auth, account_id, domain)
-        if not zone:
-            fail(
-                f"域名「{domain}」不在这个 Cloudflare 账户中。"
-                "请先把域名接入 Cloudflare，或换一个域名。"
-            )
-        if zone.get("status") != "active":
-            log(
-                f"警告：DNS 区域 {zone.get('name')} 的状态是 {zone.get('status')}，"
-                "证书签发可能较晚。"
-            )
-
-    site_url = f"https://{domain}" if domain else ""
-    if site_url:
-        log(f"博客地址：{site_url}")
+    site_url = f"https://{domain}"
+    log(f"博客地址：{site_url}")
 
     existing = inspect_resources(auth, account_id, names)
 
     if args.dry_run:
         log("\n安装计划（--dry-run，未做任何修改）")
         log(f"  Worker：{worker['workerName']}（{worker['branch']} 分支）")
-        if site_url:
-            log(f"  博客地址：{site_url}")
-        elif note:
-            log(f"  {note}")
+        log(f"  博客地址：{site_url}")
         log(
             f"  D1：{names['d1']}（"
             f"{'已存在 ' + existing['d1Id'] if existing['d1Id'] else '将创建'}）"
