@@ -54,6 +54,8 @@ DOMAIN_RE = re.compile(
     re.IGNORECASE,
 )
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+RESOURCE_NAME_RE = re.compile(r"^[A-Za-z0-9_-]{1,63}$")
+R2_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$")
 
 
 class ApiError(Exception):
@@ -169,6 +171,22 @@ def validate_domain(domain: str) -> None:
         fail(f"域名「{domain}」不合法：请填写纯域名，例如 blog.example.com。")
 
 
+def validate_resource_name(label: str, name: str) -> None:
+    if not RESOURCE_NAME_RE.match(name):
+        fail(
+            f"{label}名称「{name}」不合法：仅限字母、数字、下划线和连字符，"
+            "1–63 个字符。"
+        )
+
+
+def validate_r2_name(name: str) -> None:
+    if not R2_NAME_RE.match(name):
+        fail(
+            f"R2 存储桶名称「{name}」不合法：仅限小写字母、数字和连字符，"
+            "3–63 个字符，且不能以连字符开头或结尾。"
+        )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="one-click-deploy.py",
@@ -220,6 +238,26 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--domain",
         help="部署后的博客域名，例如 blog.example.com（或环境变量 DOMAIN）",
+    )
+    parser.add_argument(
+        "--worker",
+        help="Worker 名称，用于在仓库匹配到多个 Worker 时指定（默认按仓库查找）",
+    )
+    parser.add_argument(
+        "--d1",
+        help="D1 数据库名称（默认 <worker>-db）",
+    )
+    parser.add_argument(
+        "--kv",
+        help="KV 命名空间名称（默认 <worker>-kv）",
+    )
+    parser.add_argument(
+        "--r2",
+        help="R2 存储桶名称（默认 <worker>-media）",
+    )
+    parser.add_argument(
+        "--queue",
+        help="队列名称（默认 <worker>-queue）",
     )
     parser.add_argument(
         "--dry-run",
@@ -274,6 +312,7 @@ def read_inputs(args: argparse.Namespace) -> Dict[str, Any]:
         "githubId": github_id,
         "githubSecret": github_secret,
         "domain": domain,
+        "worker": (args.worker or "").strip() or None,
     }
 
 
@@ -410,6 +449,7 @@ def find_worker_for_repo(
     auth: Dict[str, str],
     account_id: str,
     repo: Dict[str, str],
+    wanted_worker: Optional[str] = None,
 ) -> Dict[str, Any]:
     scripts: List[Any] = []
     page = 1
@@ -459,6 +499,19 @@ def find_worker_for_repo(
             "请先在 Cloudflare 控制台的 Workers & Pages 中用 GitHub 连接这个仓库"
             "（Workers Builds），等第一次构建/部署完成后再重新运行本脚本。"
         )
+    if wanted_worker:
+        wanted = wanted_worker.lower()
+        filtered = [
+            match for match in matches if match["workerName"].lower() == wanted
+        ]
+        if not filtered:
+            found = "、".join(match["workerName"] for match in matches)
+            fail(
+                f"监听 {repo['fullName']} 的 Worker 是 {found}，"
+                f"不是你指定的 {wanted_worker}。"
+                "请确认 --worker 名称，或去掉 --worker 让脚本自动选择。"
+            )
+        matches = filtered
     if len(matches) > 1:
         names = "\n".join(f"  {match['workerName']}" for match in matches)
         fail(
@@ -503,6 +556,19 @@ def resource_names(worker: str) -> Dict[str, str]:
         "r2": resource_name(worker, "-media"),
         "queue": resource_name(worker, "-queue"),
     }
+
+
+def resolve_names(worker: str, args: argparse.Namespace) -> Dict[str, str]:
+    names = resource_names(worker)
+    for key in ("d1", "kv", "r2", "queue"):
+        value = (getattr(args, key) or "").strip()
+        if value:
+            names[key] = value
+    validate_resource_name("D1 数据库", names["d1"])
+    validate_resource_name("KV 命名空间", names["kv"])
+    validate_r2_name(names["r2"])
+    validate_resource_name("队列", names["queue"])
+    return names
 
 
 def inspect_resources(
@@ -859,10 +925,12 @@ def main() -> int:
     log(f"\nCloudflare 账户：{account.get('name')}（{account.get('id')}）")
 
     account_id = str(account["id"])
-    worker = find_worker_for_repo(auth, account_id, inputs["repo"])
+    worker = find_worker_for_repo(
+        auth, account_id, inputs["repo"], inputs.get("worker")
+    )
     log(f"找到 Worker：{worker['workerName']}（tag {worker['workerTag']}）")
 
-    names = resource_names(worker["workerName"])
+    names = resolve_names(worker["workerName"], args)
     domain = str(inputs["domain"])
     validate_domain(domain)
     zone = find_zone(auth, account_id, domain)
