@@ -31,3 +31,5 @@ Cloudflare operations go through the `cf` CLI (`bunx cf`), a 2026 beta that repl
 ## Deployment
 
 Never deploy with the Cloudflare API (`cf deploy`, uploads, tokens). Run the checks and tests locally, push to `main`, and let Cloudflare Workers Builds deploy from there; the pre-push gate (`bun typecheck`, build, bundle budget, `bun run test:node`) runs on every push to `main`.
+
+Work directly on `main`: do not create feature or agent branches, and keep `main` the only branch locally and on the remote.
