@@ -1,3 +1,4 @@
+export { useChangePassword } from "./use-change-password";
 export { useLoginForm } from "./use-login-form";
 export { useLogout } from "./use-logout";
 export { useNotificationToggle } from "./use-notification-toggle";

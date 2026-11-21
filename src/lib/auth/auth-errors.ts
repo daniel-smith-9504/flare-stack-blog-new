@@ -15,6 +15,9 @@ const COMMON_AUTH_ERROR_CODES = [
   "INVALID_OTP",
   "OTP_EXPIRED",
   "TOO_MANY_ATTEMPTS",
+  "INVALID_EMAIL_OR_PASSWORD",
+  "INVALID_PASSWORD",
+  "PASSWORD_TOO_SHORT",
 ] as const satisfies ReadonlyArray<BetterAuthErrorCode>;
 
 type CommonAuthErrorCode = (typeof COMMON_AUTH_ERROR_CODES)[number];
@@ -83,6 +86,12 @@ function getSharedAuthErrorMessage(
       return m.auth_error_otp_expired();
     case "TOO_MANY_ATTEMPTS":
       return m.auth_error_otp_too_many_attempts();
+    case "INVALID_EMAIL_OR_PASSWORD":
+      return m.auth_error_invalid_email_or_password();
+    case "INVALID_PASSWORD":
+      return m.auth_error_invalid_password();
+    case "PASSWORD_TOO_SHORT":
+      return m.password_validation_too_short();
   }
 }
 
@@ -106,6 +115,12 @@ export function getRetryAfterMs(error: AuthClientErrorLike | null | undefined) {
 }
 
 export function getSignInCodeAuthErrorMessage(
+  error: AuthClientErrorLike | null | undefined,
+): string | undefined {
+  return getSharedAuthErrorMessage(error);
+}
+
+export function getPasswordAuthErrorMessage(
   error: AuthClientErrorLike | null | undefined,
 ): string | undefined {
   return getSharedAuthErrorMessage(error);

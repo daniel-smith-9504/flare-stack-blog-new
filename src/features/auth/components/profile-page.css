@@ -87,6 +87,24 @@
   line-height: 1.65;
   margin-top: 6px;
 }
+.account-password {
+  display: grid;
+  gap: 6px;
+  padding: 24px 20px;
+}
+.account-password h2 {
+  font-size: 16px;
+  font-weight: 700;
+}
+.account-password > p {
+  color: var(--fuwari-fg-50);
+  font-size: 14px;
+  line-height: 1.65;
+}
+.account-password-form {
+  max-width: 420px;
+  margin-top: 12px;
+}
 .account-footer {
   border-top: 1px solid
     var(--theme-rule, color-mix(in srgb, var(--fuwari-fg-50) 20%, transparent));

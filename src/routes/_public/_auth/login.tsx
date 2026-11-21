@@ -33,6 +33,7 @@ function RouteComponent() {
     turnstileToken,
     resetTurnstile,
     redirectTo: resolvedRedirectTo,
+    emailCodeEnabled: isEmailConfigured,
   });
 
   const socialLogin = useSocialLogin({
