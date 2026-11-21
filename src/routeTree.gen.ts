@@ -13,6 +13,7 @@ import { Route as PublicRouteRouteImport } from './routes/_public/route'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as AtomDotxmlRouteImport } from './routes/atom[.]xml'
 import { Route as FeedDotjsonRouteImport } from './routes/feed[.]json'
+import { Route as NovelFilesRouteImport } from './routes/novel-files'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as RssDotxmlRouteImport } from './routes/rss[.]xml'
 import { Route as SiteDotwebmanifestRouteImport } from './routes/site[.]webmanifest'
@@ -51,18 +52,23 @@ import { Route as PublicUserProfileRouteImport } from './routes/_public/_user/pr
 import { Route as PublicUserSubmitFriendLinkRouteImport } from './routes/_public/_user/submit-friend-link'
 import { Route as PublicMomentsIndexRouteImport } from './routes/_public/moments/index'
 import { Route as PublicMomentsIdRouteImport } from './routes/_public/moments/$id'
+import { Route as PublicNovelsIndexRouteImport } from './routes/_public/novels/index'
+import { Route as PublicNovelsIdRouteRouteImport } from './routes/_public/novels/$id/route'
 import { Route as PublicPostSlugRouteImport } from './routes/_public/post/$slug'
 import { Route as AdminAccessIndexRouteImport } from './routes/admin/access/index'
 import { Route as AdminAccessAgentSkillRouteImport } from './routes/admin/access/agent-skill'
 import { Route as AdminAccessApiKeysRouteImport } from './routes/admin/access/api-keys'
 import { Route as AdminFriendLinksIndexRouteImport } from './routes/admin/friend-links/index'
 import { Route as AdminMediaIndexRouteImport } from './routes/admin/media/index'
+import { Route as AdminNovelsIndexRouteImport } from './routes/admin/novels/index'
 import { Route as AdminPostsIndexRouteImport } from './routes/admin/posts/index'
 import { Route as AdminSettingsIndexRouteImport } from './routes/admin/settings/index'
 import { Route as AdminSettingsMaintenanceRouteImport } from './routes/admin/settings/maintenance'
 import { Route as AdminSettingsNotificationsRouteImport } from './routes/admin/settings/notifications'
 import { Route as AdminSettingsSiteRouteImport } from './routes/admin/settings/site'
 import { Route as ApiAuthSplatRouteImport } from './routes/api.auth.$'
+import { Route as PublicNovelsIdIndexRouteImport } from './routes/_public/novels/$id/index'
+import { Route as PublicNovelsIdReadRouteImport } from './routes/_public/novels/$id/read'
 import { Route as AdminPostsEditIdRouteRouteImport } from './routes/admin/posts/edit.$id/route'
 import { Route as AdminPostsEditIdIndexRouteImport } from './routes/admin/posts/edit.$id/index'
 import { Route as AdminPostsEditIdHistoryRouteImport } from './routes/admin/posts/edit.$id/history'
@@ -85,6 +91,11 @@ const AtomDotxmlRoute = AtomDotxmlRouteImport.update({
 const FeedDotjsonRoute = FeedDotjsonRouteImport.update({
   id: '/feed.json',
   path: '/feed.json',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NovelFilesRoute = NovelFilesRouteImport.update({
+  id: '/novel-files',
+  path: '/novel-files',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
@@ -277,6 +288,16 @@ const PublicMomentsIdRoute = PublicMomentsIdRouteImport.update({
   path: '/moments/$id',
   getParentRoute: () => PublicRouteRoute,
 } as any)
+const PublicNovelsIndexRoute = PublicNovelsIndexRouteImport.update({
+  id: '/novels/',
+  path: '/novels/',
+  getParentRoute: () => PublicRouteRoute,
+} as any)
+const PublicNovelsIdRouteRoute = PublicNovelsIdRouteRouteImport.update({
+  id: '/novels/$id',
+  path: '/novels/$id',
+  getParentRoute: () => PublicRouteRoute,
+} as any)
 const PublicPostSlugRoute = PublicPostSlugRouteImport.update({
   id: '/post/$slug',
   path: '/post/$slug',
@@ -305,6 +326,11 @@ const AdminFriendLinksIndexRoute = AdminFriendLinksIndexRouteImport.update({
 const AdminMediaIndexRoute = AdminMediaIndexRouteImport.update({
   id: '/media/',
   path: '/media/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminNovelsIndexRoute = AdminNovelsIndexRouteImport.update({
+  id: '/novels/',
+  path: '/novels/',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminPostsIndexRoute = AdminPostsIndexRouteImport.update({
@@ -339,6 +365,16 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/$',
   getParentRoute: () => ApiAuthRoute,
 } as any)
+const PublicNovelsIdIndexRoute = PublicNovelsIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PublicNovelsIdRouteRoute,
+} as any)
+const PublicNovelsIdReadRoute = PublicNovelsIdReadRouteImport.update({
+  id: '/read',
+  path: '/read',
+  getParentRoute: () => PublicNovelsIdRouteRoute,
+} as any)
 const AdminPostsEditIdRouteRoute = AdminPostsEditIdRouteRouteImport.update({
   id: '/edit/$id',
   path: '/edit/$id',
@@ -366,6 +402,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteRouteWithChildren
   '/atom.xml': typeof AtomDotxmlRoute
   '/feed.json': typeof FeedDotjsonRoute
+  '/novel-files': typeof NovelFilesRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/site.webmanifest': typeof SiteDotwebmanifestRoute
@@ -392,6 +429,7 @@ export interface FileRoutesByFullPath {
   '/moments/feed.json': typeof MomentsFeedDotjsonRoute
   '/moments/rss.xml': typeof MomentsRssDotxmlRoute
   '/admin/': typeof AdminIndexRoute
+  '/novels/$id': typeof PublicNovelsIdRouteRouteWithChildren
   '/forgot-password': typeof PublicAuthForgotPasswordRoute
   '/login': typeof PublicAuthLoginRoute
   '/register': typeof PublicAuthRegisterRoute
@@ -408,12 +446,16 @@ export interface FileRoutesByFullPath {
   '/admin/settings/site': typeof AdminSettingsSiteRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/moments/': typeof PublicMomentsIndexRoute
+  '/novels/': typeof PublicNovelsIndexRoute
   '/admin/access/': typeof AdminAccessIndexRoute
   '/admin/friend-links/': typeof AdminFriendLinksIndexRoute
   '/admin/media/': typeof AdminMediaIndexRoute
+  '/admin/novels/': typeof AdminNovelsIndexRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
   '/admin/settings/': typeof AdminSettingsIndexRoute
   '/admin/posts/edit/$id': typeof AdminPostsEditIdRouteRouteWithChildren
+  '/novels/$id/read': typeof PublicNovelsIdReadRoute
+  '/novels/$id/': typeof PublicNovelsIdIndexRoute
   '/admin/posts/edit/$id/history': typeof AdminPostsEditIdHistoryRoute
   '/admin/posts/edit/$id/': typeof AdminPostsEditIdIndexRoute
   '/admin/posts/edit/$id/history/$revisionId': typeof AdminPostsEditIdHistoryRevisionIdRoute
@@ -421,6 +463,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/atom.xml': typeof AtomDotxmlRoute
   '/feed.json': typeof FeedDotjsonRoute
+  '/novel-files': typeof NovelFilesRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/site.webmanifest': typeof SiteDotwebmanifestRoute
@@ -461,11 +504,15 @@ export interface FileRoutesByTo {
   '/admin/settings/site': typeof AdminSettingsSiteRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/moments': typeof PublicMomentsIndexRoute
+  '/novels': typeof PublicNovelsIndexRoute
   '/admin/access': typeof AdminAccessIndexRoute
   '/admin/friend-links': typeof AdminFriendLinksIndexRoute
   '/admin/media': typeof AdminMediaIndexRoute
+  '/admin/novels': typeof AdminNovelsIndexRoute
   '/admin/posts': typeof AdminPostsIndexRoute
   '/admin/settings': typeof AdminSettingsIndexRoute
+  '/novels/$id/read': typeof PublicNovelsIdReadRoute
+  '/novels/$id': typeof PublicNovelsIdIndexRoute
   '/admin/posts/edit/$id/history': typeof AdminPostsEditIdHistoryRoute
   '/admin/posts/edit/$id': typeof AdminPostsEditIdIndexRoute
   '/admin/posts/edit/$id/history/$revisionId': typeof AdminPostsEditIdHistoryRevisionIdRoute
@@ -476,6 +523,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteRouteWithChildren
   '/atom.xml': typeof AtomDotxmlRoute
   '/feed.json': typeof FeedDotjsonRoute
+  '/novel-files': typeof NovelFilesRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/site.webmanifest': typeof SiteDotwebmanifestRoute
@@ -505,6 +553,7 @@ export interface FileRoutesById {
   '/moments/rss.xml': typeof MomentsRssDotxmlRoute
   '/_public/': typeof PublicIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/_public/novels/$id': typeof PublicNovelsIdRouteRouteWithChildren
   '/_public/_auth/forgot-password': typeof PublicAuthForgotPasswordRoute
   '/_public/_auth/login': typeof PublicAuthLoginRoute
   '/_public/_auth/register': typeof PublicAuthRegisterRoute
@@ -521,12 +570,16 @@ export interface FileRoutesById {
   '/admin/settings/site': typeof AdminSettingsSiteRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_public/moments/': typeof PublicMomentsIndexRoute
+  '/_public/novels/': typeof PublicNovelsIndexRoute
   '/admin/access/': typeof AdminAccessIndexRoute
   '/admin/friend-links/': typeof AdminFriendLinksIndexRoute
   '/admin/media/': typeof AdminMediaIndexRoute
+  '/admin/novels/': typeof AdminNovelsIndexRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
   '/admin/settings/': typeof AdminSettingsIndexRoute
   '/admin/posts/edit/$id': typeof AdminPostsEditIdRouteRouteWithChildren
+  '/_public/novels/$id/read': typeof PublicNovelsIdReadRoute
+  '/_public/novels/$id/': typeof PublicNovelsIdIndexRoute
   '/admin/posts/edit/$id/history': typeof AdminPostsEditIdHistoryRoute
   '/admin/posts/edit/$id/': typeof AdminPostsEditIdIndexRoute
   '/admin/posts/edit/$id/history_/$revisionId': typeof AdminPostsEditIdHistoryRevisionIdRoute
@@ -538,6 +591,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/atom.xml'
     | '/feed.json'
+    | '/novel-files'
     | '/robots.txt'
     | '/rss.xml'
     | '/site.webmanifest'
@@ -564,6 +618,7 @@ export interface FileRouteTypes {
     | '/moments/feed.json'
     | '/moments/rss.xml'
     | '/admin/'
+    | '/novels/$id'
     | '/forgot-password'
     | '/login'
     | '/register'
@@ -580,12 +635,16 @@ export interface FileRouteTypes {
     | '/admin/settings/site'
     | '/api/auth/$'
     | '/moments/'
+    | '/novels/'
     | '/admin/access/'
     | '/admin/friend-links/'
     | '/admin/media/'
+    | '/admin/novels/'
     | '/admin/posts/'
     | '/admin/settings/'
     | '/admin/posts/edit/$id'
+    | '/novels/$id/read'
+    | '/novels/$id/'
     | '/admin/posts/edit/$id/history'
     | '/admin/posts/edit/$id/'
     | '/admin/posts/edit/$id/history/$revisionId'
@@ -593,6 +652,7 @@ export interface FileRouteTypes {
   to:
     | '/atom.xml'
     | '/feed.json'
+    | '/novel-files'
     | '/robots.txt'
     | '/rss.xml'
     | '/site.webmanifest'
@@ -633,11 +693,15 @@ export interface FileRouteTypes {
     | '/admin/settings/site'
     | '/api/auth/$'
     | '/moments'
+    | '/novels'
     | '/admin/access'
     | '/admin/friend-links'
     | '/admin/media'
+    | '/admin/novels'
     | '/admin/posts'
     | '/admin/settings'
+    | '/novels/$id/read'
+    | '/novels/$id'
     | '/admin/posts/edit/$id/history'
     | '/admin/posts/edit/$id'
     | '/admin/posts/edit/$id/history/$revisionId'
@@ -647,6 +711,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/atom.xml'
     | '/feed.json'
+    | '/novel-files'
     | '/robots.txt'
     | '/rss.xml'
     | '/site.webmanifest'
@@ -676,6 +741,7 @@ export interface FileRouteTypes {
     | '/moments/rss.xml'
     | '/_public/'
     | '/admin/'
+    | '/_public/novels/$id'
     | '/_public/_auth/forgot-password'
     | '/_public/_auth/login'
     | '/_public/_auth/register'
@@ -692,12 +758,16 @@ export interface FileRouteTypes {
     | '/admin/settings/site'
     | '/api/auth/$'
     | '/_public/moments/'
+    | '/_public/novels/'
     | '/admin/access/'
     | '/admin/friend-links/'
     | '/admin/media/'
+    | '/admin/novels/'
     | '/admin/posts/'
     | '/admin/settings/'
     | '/admin/posts/edit/$id'
+    | '/_public/novels/$id/read'
+    | '/_public/novels/$id/'
     | '/admin/posts/edit/$id/history'
     | '/admin/posts/edit/$id/'
     | '/admin/posts/edit/$id/history_/$revisionId'
@@ -708,6 +778,7 @@ export interface RootRouteChildren {
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   AtomDotxmlRoute: typeof AtomDotxmlRoute
   FeedDotjsonRoute: typeof FeedDotjsonRoute
+  NovelFilesRoute: typeof NovelFilesRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   RssDotxmlRoute: typeof RssDotxmlRoute
   SiteDotwebmanifestRoute: typeof SiteDotwebmanifestRoute
@@ -749,6 +820,13 @@ declare module '@tanstack/react-router' {
       path: '/feed.json'
       fullPath: '/feed.json'
       preLoaderRoute: typeof FeedDotjsonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/novel-files': {
+      id: '/novel-files'
+      path: '/novel-files'
+      fullPath: '/novel-files'
+      preLoaderRoute: typeof NovelFilesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/robots.txt': {
@@ -1017,6 +1095,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicMomentsIdRouteImport
       parentRoute: typeof PublicRouteRoute
     }
+    '/_public/novels/': {
+      id: '/_public/novels/'
+      path: '/novels'
+      fullPath: '/novels/'
+      preLoaderRoute: typeof PublicNovelsIndexRouteImport
+      parentRoute: typeof PublicRouteRoute
+    }
+    '/_public/novels/$id': {
+      id: '/_public/novels/$id'
+      path: '/novels/$id'
+      fullPath: '/novels/$id'
+      preLoaderRoute: typeof PublicNovelsIdRouteRouteImport
+      parentRoute: typeof PublicRouteRoute
+    }
     '/_public/post/$slug': {
       id: '/_public/post/$slug'
       path: '/post/$slug'
@@ -1057,6 +1149,13 @@ declare module '@tanstack/react-router' {
       path: '/media'
       fullPath: '/admin/media/'
       preLoaderRoute: typeof AdminMediaIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/novels/': {
+      id: '/admin/novels/'
+      path: '/novels'
+      fullPath: '/admin/novels/'
+      preLoaderRoute: typeof AdminNovelsIndexRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/posts/': {
@@ -1100,6 +1199,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof ApiAuthRoute
+    }
+    '/_public/novels/$id/': {
+      id: '/_public/novels/$id/'
+      path: '/'
+      fullPath: '/novels/$id/'
+      preLoaderRoute: typeof PublicNovelsIdIndexRouteImport
+      parentRoute: typeof PublicNovelsIdRouteRoute
+    }
+    '/_public/novels/$id/read': {
+      id: '/_public/novels/$id/read'
+      path: '/read'
+      fullPath: '/novels/$id/read'
+      preLoaderRoute: typeof PublicNovelsIdReadRouteImport
+      parentRoute: typeof PublicNovelsIdRouteRoute
     }
     '/admin/posts/edit/$id': {
       id: '/admin/posts/edit/$id'
@@ -1166,6 +1279,19 @@ const PublicUserRouteRouteWithChildren = PublicUserRouteRoute._addFileChildren(
   PublicUserRouteRouteChildren,
 )
 
+interface PublicNovelsIdRouteRouteChildren {
+  PublicNovelsIdReadRoute: typeof PublicNovelsIdReadRoute
+  PublicNovelsIdIndexRoute: typeof PublicNovelsIdIndexRoute
+}
+
+const PublicNovelsIdRouteRouteChildren: PublicNovelsIdRouteRouteChildren = {
+  PublicNovelsIdReadRoute: PublicNovelsIdReadRoute,
+  PublicNovelsIdIndexRoute: PublicNovelsIdIndexRoute,
+}
+
+const PublicNovelsIdRouteRouteWithChildren =
+  PublicNovelsIdRouteRoute._addFileChildren(PublicNovelsIdRouteRouteChildren)
+
 interface PublicRouteRouteChildren {
   PublicAuthRouteRoute: typeof PublicAuthRouteRouteWithChildren
   PublicUserRouteRoute: typeof PublicUserRouteRouteWithChildren
@@ -1175,9 +1301,11 @@ interface PublicRouteRouteChildren {
   PublicSearchRoute: typeof PublicSearchRoute
   PublicUnsubscribeRoute: typeof PublicUnsubscribeRoute
   PublicIndexRoute: typeof PublicIndexRoute
+  PublicNovelsIdRouteRoute: typeof PublicNovelsIdRouteRouteWithChildren
   PublicMomentsIdRoute: typeof PublicMomentsIdRoute
   PublicPostSlugRoute: typeof PublicPostSlugRoute
   PublicMomentsIndexRoute: typeof PublicMomentsIndexRoute
+  PublicNovelsIndexRoute: typeof PublicNovelsIndexRoute
 }
 
 const PublicRouteRouteChildren: PublicRouteRouteChildren = {
@@ -1189,9 +1317,11 @@ const PublicRouteRouteChildren: PublicRouteRouteChildren = {
   PublicSearchRoute: PublicSearchRoute,
   PublicUnsubscribeRoute: PublicUnsubscribeRoute,
   PublicIndexRoute: PublicIndexRoute,
+  PublicNovelsIdRouteRoute: PublicNovelsIdRouteRouteWithChildren,
   PublicMomentsIdRoute: PublicMomentsIdRoute,
   PublicPostSlugRoute: PublicPostSlugRoute,
   PublicMomentsIndexRoute: PublicMomentsIndexRoute,
+  PublicNovelsIndexRoute: PublicNovelsIndexRoute,
 }
 
 const PublicRouteRouteWithChildren = PublicRouteRoute._addFileChildren(
@@ -1275,6 +1405,7 @@ interface AdminRouteRouteChildren {
   AdminIndexRoute: typeof AdminIndexRoute
   AdminFriendLinksIndexRoute: typeof AdminFriendLinksIndexRoute
   AdminMediaIndexRoute: typeof AdminMediaIndexRoute
+  AdminNovelsIndexRoute: typeof AdminNovelsIndexRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
@@ -1290,6 +1421,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminIndexRoute: AdminIndexRoute,
   AdminFriendLinksIndexRoute: AdminFriendLinksIndexRoute,
   AdminMediaIndexRoute: AdminMediaIndexRoute,
+  AdminNovelsIndexRoute: AdminNovelsIndexRoute,
 }
 
 const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
@@ -1312,6 +1444,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRouteRoute: AdminRouteRouteWithChildren,
   AtomDotxmlRoute: AtomDotxmlRoute,
   FeedDotjsonRoute: FeedDotjsonRoute,
+  NovelFilesRoute: NovelFilesRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   RssDotxmlRoute: RssDotxmlRoute,
   SiteDotwebmanifestRoute: SiteDotwebmanifestRoute,

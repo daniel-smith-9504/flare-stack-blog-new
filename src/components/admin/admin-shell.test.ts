@@ -112,7 +112,7 @@ describe("The Admin sidebar", () => {
           .map((link) => link.getAttribute("href")),
       ),
     ).toEqual([
-      ["/admin/posts", "/admin/media", "/admin/taxonomy"],
+      ["/admin/posts", "/admin/novels", "/admin/media", "/admin/taxonomy"],
       ["/admin/comments", "/admin/friend-links", "/admin/muted-users"],
       ["/admin/personalize", "/admin/access/api-keys", "/admin/settings/site"],
     ]);
@@ -124,6 +124,7 @@ describe("The Admin sidebar", () => {
       ),
     ).toEqual([
       m.admin_sidebar_posts(),
+      m.admin_sidebar_novels(),
       m.admin_sidebar_media(),
       m.admin_sidebar_taxonomy(),
       m.admin_sidebar_comments(),

@@ -319,6 +319,190 @@
       }
     }
   },
+  "novels": {
+    "list": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "GET",
+          "path": "/novels"
+        }
+      }
+    },
+    "byId": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "GET",
+          "path": "/novels/{id}"
+        }
+      }
+    },
+    "progress": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "GET",
+          "path": "/novels/progress"
+        }
+      }
+    },
+    "chapter": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "GET",
+          "path": "/novels/{novelId}/chapters/{order}"
+        }
+      }
+    },
+    "publicNotes": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "GET",
+          "path": "/novels/{novelId}/notes/public"
+        }
+      }
+    },
+    "myNotes": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "GET",
+          "path": "/novels/notes"
+        }
+      }
+    },
+    "createNote": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "POST",
+          "path": "/novels/notes"
+        }
+      }
+    },
+    "updateNote": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "PATCH",
+          "path": "/novels/notes/{id}"
+        }
+      }
+    },
+    "deleteNote": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "DELETE",
+          "path": "/novels/notes/{id}"
+        }
+      }
+    },
+    "saveProgress": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "PUT",
+          "path": "/novels/progress"
+        }
+      }
+    },
+    "settings": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "GET",
+          "path": "/novels/settings"
+        }
+      }
+    },
+    "saveSettings": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "PUT",
+          "path": "/novels/settings"
+        }
+      }
+    },
+    "admin": {
+      "list": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "GET",
+            "path": "/admin/novels"
+          }
+        }
+      },
+      "update": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "PATCH",
+            "path": "/admin/novels/{id}"
+          }
+        }
+      },
+      "remove": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "DELETE",
+            "path": "/admin/novels/{id}"
+          }
+        }
+      },
+      "retry": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "POST",
+            "path": "/admin/novels/{id}/retry"
+          }
+        }
+      },
+      "gutenbergSearch": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "GET",
+            "path": "/admin/novels/gutenberg"
+          }
+        }
+      },
+      "gutenbergImport": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "POST",
+            "path": "/admin/novels/gutenberg"
+          }
+        }
+      }
+    }
+  },
   "tags": {
     "list": {
       "~orpc": {

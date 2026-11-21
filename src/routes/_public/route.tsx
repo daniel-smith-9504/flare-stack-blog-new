@@ -108,6 +108,7 @@ function PublicLayout() {
   const navOptions: Array<NavOption> = [
     { id: "home", label: m.nav_home(), href: "/", external: false },
     { id: "posts", label: m.nav_posts(), href: "/posts", external: false },
+    { id: "novels", label: m.nav_novels(), href: "/novels", external: false },
     ...(showMoments
       ? [
           {

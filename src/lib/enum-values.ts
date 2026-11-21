@@ -19,3 +19,18 @@ export const FRIEND_LINK_STATUSES = [
   "approved",
   "rejected",
 ] as const;
+
+export const NOVEL_STATUSES = [
+  "pending",
+  "parsing",
+  "ready",
+  "failed",
+] as const;
+
+export const NOVEL_SOURCES = ["upload", "gutenberg"] as const;
+
+export const NOVEL_FILE_FORMATS = ["epub", "txt"] as const;
+
+export const NOVEL_READER_THEMES = ["light", "sepia", "dark"] as const;
+
+export const NOVEL_FONT_FAMILIES = ["serif", "sans"] as const;

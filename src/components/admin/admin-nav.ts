@@ -1,4 +1,5 @@
 import {
+  BookOpen,
   FileText,
   Image as ImageIcon,
   KeyRound,
@@ -66,6 +67,13 @@ export const ADMIN_NAV: ReadonlyArray<AdminNavGroup> = [
         prefix: "/admin/posts",
         label: () => m.admin_sidebar_posts(),
         icon: FileText,
+      },
+      {
+        id: "novels",
+        to: "/admin/novels",
+        prefix: "/admin/novels",
+        label: () => m.admin_sidebar_novels(),
+        icon: BookOpen,
       },
       {
         id: "media",

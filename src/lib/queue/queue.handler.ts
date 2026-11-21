@@ -1,4 +1,5 @@
 import { handleEmailMessage } from "@/features/email/api/email.consumer";
+import { handleNovelImportMessage } from "@/features/novels/services/novel-import.consumer";
 import { handleWebhookMessage } from "@/features/webhook/api/webhook.consumer";
 import { queueMessageSchema } from "@/lib/queue/queue.schema";
 
@@ -38,6 +39,9 @@ export async function handleQueueBatch(
           break;
         case "WEBHOOK":
           await handleWebhookMessage({ env }, event.data, message.id);
+          break;
+        case "NOVEL_IMPORT":
+          await handleNovelImportMessage({ env }, event.data);
           break;
         default:
           event satisfies never;

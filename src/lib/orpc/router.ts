@@ -12,6 +12,7 @@ import configRouter from "@/features/config/server/router";
 import emailRouter from "@/features/email/server/router";
 import friendLinksRouter from "@/features/friend-links/server/router";
 import momentsRouter from "@/features/moments/server/router";
+import novelsRouter from "@/features/novels/server/router";
 import postsRouter from "@/features/posts/server/router";
 import searchRouter from "@/features/search/server/router";
 import tagsRouter from "@/features/tags/server/router";
@@ -22,6 +23,7 @@ import tagsRouter from "@/features/tags/server/router";
 export const router = {
   posts: postsRouter,
   moments: momentsRouter,
+  novels: novelsRouter,
   tags: tagsRouter,
   categories: categoriesRouter,
   comments: commentsRouter,

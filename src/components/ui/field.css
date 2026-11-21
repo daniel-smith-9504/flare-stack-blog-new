@@ -122,6 +122,14 @@
     display: none;
   }
 
+  /* A native range input tinted with the theme's accent. */
+  .fuwari-slider {
+    display: block;
+    width: 100%;
+    accent-color: var(--theme-accent);
+    cursor: pointer;
+  }
+
   /* A field with an icon or buttons beside its input. */
   .fuwari-field-shell {
     display: flex;

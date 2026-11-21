@@ -11,6 +11,7 @@ import {
   FriendLinksTable,
   MediaTable,
   MomentsTable,
+  NovelsTable,
 } from "@/lib/db/schema";
 import { createApiContext } from "@/lib/orpc/create-context";
 import { handleApiRequest, openAPIHandler } from "@/lib/orpc/openapi-handler";
@@ -145,6 +146,10 @@ async function seedPairs(apiKey: string) {
     .insert(MomentsTable)
     .values(["a", "b"].map((text) => ({ text })))
     .returning({ id: MomentsTable.id });
+  const novels = await db
+    .insert(NovelsTable)
+    .values(["Addressed", "Smuggled"].map((title) => ({ title })))
+    .returning({ id: NovelsTable.id });
   const mediaKeys = ["path-a.png", "path-b.png"];
   await db.insert(MediaTable).values(
     mediaKeys.map((key) => ({
@@ -166,6 +171,11 @@ async function seedPairs(apiKey: string) {
     media: [mediaKeys[0], mediaKeys[1]],
     moments: [moments[0].id, moments[1].id],
     "muted-users": [userIds[0], userIds[1]],
+    novels: [novels[0].id, novels[1].id],
+    // The request is refused by the path-parameter rule before any lookup,
+    // so a chapter or note only needs a plausible whole number.
+    chapters: [1, 2],
+    notes: [1, 2],
     slugs: [posts[0].slug, posts[1].slug],
   };
   // The kind of object a `{param}` names is the path segment before it.
