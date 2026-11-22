@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft, BookOpen, Play } from "lucide-react";
 import { NovelCover } from "@/features/novels/components/novel-cover";
 import type { NovelDetail } from "@/features/novels/novels.schema";
-import { novelProgressQuery } from "@/features/novels/queries";
+import { novelProgressQuery, bookmarksQuery } from "@/features/novels/queries";
 import { useSession } from "@/features/auth/hooks/use-session";
 import { buttonClass } from "@/components/ui/button";
 import { m } from "@/paraglide/messages";
@@ -12,6 +12,9 @@ export function NovelPage({ novel }: { novel: NovelDetail }) {
   const { data: session } = useSession();
   const { data: progress } = useQuery(
     novelProgressQuery(novel.id, Boolean(session)),
+  );
+  const { data: bookmarks = [] } = useQuery(
+    bookmarksQuery(novel.id, Boolean(session)),
   );
 
   const firstOrder = novel.chapters[0]?.order ?? 1;
@@ -52,6 +55,16 @@ export function NovelPage({ novel }: { novel: NovelDetail }) {
                 {novel.category}
               </span>
             ) : null}
+            {novel.tags.map((tag) => (
+              <Link
+                key={tag.id}
+                to="/novels"
+                search={{ tag: tag.slug }}
+                className="rounded-full bg-(--primary)/10 px-2.5 py-0.5 text-(--primary)"
+              >
+                {tag.name}
+              </Link>
+            ))}
             <span>
               {m.novels_chapters_count({ count: novel.chapterCount })}
             </span>
@@ -86,6 +99,28 @@ export function NovelPage({ novel }: { novel: NovelDetail }) {
           <BookOpen size={17} />
           {m.novels_chapter_list()}
         </h2>
+        {bookmarks.length > 0 ? (
+          <div className="mt-3">
+            <p className="text-xs font-medium text-black/50 dark:text-white/50">
+              {m.novels_bookmarks()}
+            </p>
+            <div className="mt-1.5 flex flex-wrap gap-2">
+              {bookmarks.map((bookmark) => (
+                <Link
+                  key={bookmark.id}
+                  to="/novels/$id/read"
+                  params={{ id: String(novel.id) }}
+                  search={{ chapter: bookmark.chapterOrder }}
+                  className="rounded-full bg-black/5 px-3 py-1 text-xs hover:text-(--primary) dark:bg-white/10"
+                >
+                  {bookmark.chapterOrder}.{" "}
+                  {bookmark.chapterTitle ||
+                    m.novels_chapter_number({ order: bookmark.chapterOrder })}
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <ol className="mt-3 grid gap-2 sm:grid-cols-2">
           {novel.chapters.map((chapter) => (
             <li key={chapter.order}>

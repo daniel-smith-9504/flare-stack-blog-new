@@ -2,11 +2,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
   BookOpen,
+  Download,
+  FileUp,
   Globe2,
   Image as ImageIcon,
+  ListTree,
+  MessageSquareWarning,
   RefreshCw,
+  Tags,
   Trash2,
   Upload,
+  BarChart3,
 } from "lucide-react";
 import { lazy, Suspense, useState, type FormEvent } from "react";
 import { AdminPage } from "@/components/admin/admin-page";
@@ -14,6 +20,7 @@ import { Button, buttonClass } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { NovelCover } from "@/features/novels/components/novel-cover";
+import { NovelTagAssignment } from "@/features/novels/components/admin/novel-tag-assignment";
 import type {
   AdminNovel,
   GutenbergBook,
@@ -52,6 +59,7 @@ export function NovelAdminPage() {
   const [importingId, setImportingId] = useState<number | null>(null);
   const [coverTarget, setCoverTarget] = useState<AdminNovel | null>(null);
   const [savingCoverId, setSavingCoverId] = useState<number | null>(null);
+  const [restoring, setRestoring] = useState(false);
 
   const refresh = () => {
     void queryClient.invalidateQueries({
@@ -160,6 +168,24 @@ export function NovelAdminPage() {
     }
   };
 
+  const restoreBackup = async (file: File) => {
+    setRestoring(true);
+    try {
+      const response = await fetch("/novel-backup", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: await file.text(),
+      });
+      if (!response.ok) throw new Error("restore failed");
+      toast.success(m.admin_novels_backup_restored());
+      refresh();
+    } catch {
+      toast.error(m.admin_novels_backup_failed());
+    } finally {
+      setRestoring(false);
+    }
+  };
+
   return (
     <AdminPage
       title={m.admin_novels_title()}
@@ -169,6 +195,57 @@ export function NovelAdminPage() {
       inset={false}
     >
       <div className="space-y-6">
+        <section className="fuwari-card-base flex flex-wrap items-center gap-2 p-3 text-sm">
+          <Link
+            to="/admin/novels/stats"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-black/5 px-3 py-1.5 dark:bg-white/10"
+          >
+            <BarChart3 size={15} />
+            {m.admin_novel_stats_title()}
+          </Link>
+          <Link
+            to="/admin/novels/tags"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-black/5 px-3 py-1.5 dark:bg-white/10"
+          >
+            <Tags size={15} />
+            {m.admin_novel_tags_title()}
+          </Link>
+          <Link
+            to="/admin/novels/notes"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-black/5 px-3 py-1.5 dark:bg-white/10"
+          >
+            <MessageSquareWarning size={15} />
+            {m.admin_novel_notes_title()}
+          </Link>
+          <span className="flex-1" />
+          <a
+            href="/novel-backup"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-black/5 px-3 py-1.5 dark:bg-white/10"
+          >
+            <Download size={15} />
+            {m.admin_novels_backup_export()}
+          </a>
+          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-black/5 px-3 py-1.5 dark:bg-white/10">
+            <FileUp size={15} />
+            {restoring
+              ? m.admin_novels_backup_restoring()
+              : m.admin_novels_backup_restore()}
+            <Input
+              type="file"
+              accept="application/json,.json"
+              disabled={restoring}
+              className="sr-only"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = "";
+                if (!file) return;
+                if (!window.confirm(m.admin_novels_backup_confirm())) return;
+                void restoreBackup(file);
+              }}
+            />
+          </label>
+        </section>
+
         <section className="fuwari-card-base p-4">
           <h2 className="flex items-center gap-2 text-sm font-semibold">
             <Upload size={16} />
@@ -301,14 +378,25 @@ export function NovelAdminPage() {
                     </Button>
                   </div>
                   {novel.status === "ready" ? (
-                    <Link
-                      to="/novels/$id"
-                      params={{ id: String(novel.id) }}
-                      className="text-xs text-black/55 hover:text-(--primary) dark:text-white/55"
-                    >
-                      {m.admin_novels_view()}
-                    </Link>
+                    <>
+                      <Link
+                        to="/admin/novels/$id"
+                        params={{ id: String(novel.id) }}
+                        className="inline-flex items-center gap-1 text-xs text-black/55 hover:text-(--primary) dark:text-white/55"
+                      >
+                        <ListTree size={14} />
+                        {m.admin_novel_chapters_title()}
+                      </Link>
+                      <Link
+                        to="/novels/$id"
+                        params={{ id: String(novel.id) }}
+                        className="text-xs text-black/55 hover:text-(--primary) dark:text-white/55"
+                      >
+                        {m.admin_novels_view()}
+                      </Link>
+                    </>
                   ) : null}
+                  <NovelTagAssignment novelId={novel.id} />
                   {novel.status === "failed" ? (
                     <Button
                       variant="plain"

@@ -22,9 +22,14 @@ export function PageViewTracker() {
       return;
     }
 
+    const search = new URLSearchParams(window.location.search);
+    const novel = /^\/novels\/(\d+)\/read$/.exec(pathname);
+    const chapter = novel ? Number(search.get("chapter")) : NaN;
     const body = JSON.stringify({
       path: pathname,
       referrer: document.referrer,
+      novelId: novel ? Number(novel[1]) : null,
+      chapter: Number.isInteger(chapter) && chapter > 0 ? chapter : null,
     });
     try {
       const queued = navigator.sendBeacon?.(

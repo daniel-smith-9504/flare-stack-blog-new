@@ -10,6 +10,7 @@ import {
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { lazy, Suspense, type ComponentType } from "react";
 import { ColourSchemeProvider } from "@/components/common/colour-scheme-provider";
+import { ServiceWorkerRegistration } from "@/components/common/service-worker-registration";
 import { getFuwariThemeStyle } from "@/components/layout/document-style";
 import { siteConfigQuery } from "@/features/config/queries";
 import {
@@ -162,6 +163,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <Suspense fallback={null}>
             <AppDevtools />
           </Suspense>
+          <ServiceWorkerRegistration />
         </ClientOnly>
         <Scripts />
       </body>

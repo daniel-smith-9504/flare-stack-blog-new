@@ -47,7 +47,12 @@ export const Route = createFileRoute("/api/track")({
         });
         if (limited) return limited;
 
-        let body: { path?: unknown; referrer?: unknown };
+        let body: {
+          path?: unknown;
+          referrer?: unknown;
+          novelId?: unknown;
+          chapter?: unknown;
+        };
         try {
           body = (await request.json()) as typeof body;
         } catch {
@@ -84,9 +89,25 @@ export const Route = createFileRoute("/api/track")({
         }
 
         try {
+          const novelId =
+            typeof body.novelId === "number" &&
+            Number.isInteger(body.novelId) &&
+            body.novelId > 0
+              ? body.novelId
+              : null;
+          const chapter =
+            typeof body.chapter === "number" &&
+            Number.isInteger(body.chapter) &&
+            body.chapter > 0
+              ? body.chapter
+              : null;
           await insertPageView(db, {
             path,
             postSlug: postSlugOfPath(path),
+            novelId:
+              novelId && /^\/novels\/\d+\/read$/.test(path) ? novelId : null,
+            novelChapter:
+              novelId && /^\/novels\/\d+\/read$/.test(path) ? chapter : null,
             visitorId,
             country: metadataText(context.geo?.country),
             region: metadataText(context.geo?.region),

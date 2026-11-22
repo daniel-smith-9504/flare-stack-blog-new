@@ -4,12 +4,17 @@ import { orpcClient } from "@/lib/orpc";
 
 export const NOVELS_QUERY_KEY = ["novels"] as const;
 
-export function novelsPageQuery(page: number) {
+export function novelsPageQuery(page: number, tag?: string) {
   return queryOptions({
-    queryKey: [...NOVELS_QUERY_KEY, "list", page],
-    queryFn: ({ signal }) => orpcClient.novels.list({ page }, { signal }),
+    queryKey: [...NOVELS_QUERY_KEY, "list", page, tag ?? null],
+    queryFn: ({ signal }) => orpcClient.novels.list({ page, tag }, { signal }),
   });
 }
+
+export const shelfTagsQuery = queryOptions({
+  queryKey: [...NOVELS_QUERY_KEY, "tags"],
+  queryFn: ({ signal }) => orpcClient.novels.tags(undefined, { signal }),
+});
 
 /** Resolves to null for a book that does not exist (the server answers 404). */
 export function novelQuery(id: number) {
@@ -43,11 +48,34 @@ export function novelChapterQuery(novelId: number, order: number) {
   });
 }
 
-export function publicNotesQuery(novelId: number, chapterOrder: number) {
+export function publicNotesQuery(
+  novelId: number,
+  chapterOrder: number,
+  sort: "newest" | "hottest" = "newest",
+) {
   return queryOptions({
-    queryKey: [...NOVELS_QUERY_KEY, "public-notes", novelId, chapterOrder],
+    queryKey: [
+      ...NOVELS_QUERY_KEY,
+      "public-notes",
+      novelId,
+      chapterOrder,
+      sort,
+    ],
     queryFn: ({ signal }) =>
-      orpcClient.novels.publicNotes({ novelId, chapterOrder }, { signal }),
+      orpcClient.novels.publicNotes(
+        { novelId, chapterOrder, sort },
+        { signal },
+      ),
+  });
+}
+
+export function bookmarksQuery(novelId: number, enabled: boolean) {
+  return queryOptions({
+    queryKey: [...NOVELS_QUERY_KEY, "bookmarks", novelId],
+    queryFn: ({ signal }) =>
+      orpcClient.novels.bookmarks({ novelId }, { signal }),
+    enabled,
+    retry: false,
   });
 }
 
@@ -96,3 +124,49 @@ export const adminNovelsQuery = queryOptions({
       : false;
   },
 });
+
+export function adminChaptersQuery(novelId: number) {
+  return queryOptions({
+    queryKey: [...NOVELS_QUERY_KEY, "admin", "chapters", novelId],
+    queryFn: ({ signal }) =>
+      orpcClient.novels.admin.chapters({ novelId }, { signal }),
+  });
+}
+
+export function adminChapterQuery(novelId: number, order: number) {
+  return queryOptions({
+    queryKey: [...NOVELS_QUERY_KEY, "admin", "chapter", novelId, order],
+    queryFn: ({ signal }) =>
+      orpcClient.novels.admin.chapter({ novelId, order }, { signal }),
+  });
+}
+
+export const adminTagsQuery = queryOptions({
+  queryKey: [...NOVELS_QUERY_KEY, "admin", "tags"],
+  queryFn: ({ signal }) => orpcClient.novels.admin.tags(undefined, { signal }),
+});
+
+export function adminNovelTagsQuery(novelId: number) {
+  return queryOptions({
+    queryKey: [...NOVELS_QUERY_KEY, "admin", "novel-tags", novelId],
+    queryFn: ({ signal }) =>
+      orpcClient.novels.admin.novelTags({ novelId }, { signal }),
+  });
+}
+
+export function adminNotesQuery(status?: "visible" | "removed") {
+  return queryOptions({
+    queryKey: [...NOVELS_QUERY_KEY, "admin", "notes", status ?? "all"],
+    queryFn: ({ signal }) =>
+      orpcClient.novels.admin.notes({ status, limit: 100 }, { signal }),
+    refetchInterval: 15000,
+  });
+}
+
+export function adminNovelStatsQuery(days: number) {
+  return queryOptions({
+    queryKey: [...NOVELS_QUERY_KEY, "admin", "stats", days],
+    queryFn: ({ signal }) =>
+      orpcClient.novels.admin.stats({ days }, { signal }),
+  });
+}

@@ -330,6 +330,16 @@
         }
       }
     },
+    "tags": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "GET",
+          "path": "/novels/tags"
+        }
+      }
+    },
     "byId": {
       "~orpc": {
         "errorMap": {},
@@ -440,6 +450,66 @@
         }
       }
     },
+    "bookmarks": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "GET",
+          "path": "/novels/bookmarks"
+        }
+      }
+    },
+    "setBookmark": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "PUT",
+          "path": "/novels/bookmarks"
+        }
+      }
+    },
+    "reading": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "POST",
+          "path": "/novels/reading"
+        }
+      }
+    },
+    "likeNote": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "POST",
+          "path": "/novels/notes/{id}/like"
+        }
+      }
+    },
+    "reportNote": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "POST",
+          "path": "/novels/notes/{id}/report"
+        }
+      }
+    },
+    "voteNote": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "POST",
+          "path": "/novels/notes/{id}/vote"
+        }
+      }
+    },
     "admin": {
       "list": {
         "~orpc": {
@@ -498,6 +568,176 @@
           "route": {
             "method": "POST",
             "path": "/admin/novels/gutenberg"
+          }
+        }
+      },
+      "chapters": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "GET",
+            "path": "/admin/novels/{novelId}/chapters"
+          }
+        }
+      },
+      "chapter": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "GET",
+            "path": "/admin/novels/{novelId}/chapters/{order}"
+          }
+        }
+      },
+      "createChapter": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "POST",
+            "path": "/admin/novels/{novelId}/chapters"
+          }
+        }
+      },
+      "updateChapter": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "PUT",
+            "path": "/admin/novels/{novelId}/chapters/{order}"
+          }
+        }
+      },
+      "deleteChapter": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "DELETE",
+            "path": "/admin/novels/{novelId}/chapters/{order}"
+          }
+        }
+      },
+      "batchDeleteChapters": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "POST",
+            "path": "/admin/novels/{novelId}/chapters/batch-delete"
+          }
+        }
+      },
+      "moveChapter": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "POST",
+            "path": "/admin/novels/{novelId}/chapters/move"
+          }
+        }
+      },
+      "tags": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "GET",
+            "path": "/admin/novels/tags"
+          }
+        }
+      },
+      "createTag": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "POST",
+            "path": "/admin/novels/tags"
+          }
+        }
+      },
+      "renameTag": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "PATCH",
+            "path": "/admin/novels/tags/{id}"
+          }
+        }
+      },
+      "deleteTag": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "DELETE",
+            "path": "/admin/novels/tags/{id}"
+          }
+        }
+      },
+      "novelTags": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "GET",
+            "path": "/admin/novels/{novelId}/tags"
+          }
+        }
+      },
+      "setNovelTags": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "PUT",
+            "path": "/admin/novels/{novelId}/tags"
+          }
+        }
+      },
+      "stats": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "GET",
+            "path": "/admin/novels/stats"
+          }
+        }
+      },
+      "notes": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "GET",
+            "path": "/admin/novels/notes"
+          }
+        }
+      },
+      "removeNote": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "POST",
+            "path": "/admin/novels/notes/{id}/remove"
+          }
+        }
+      },
+      "restoreNote": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "POST",
+            "path": "/admin/novels/notes/{id}/restore"
           }
         }
       }

@@ -31,6 +31,20 @@ export const NOVEL_SOURCES = ["upload", "gutenberg"] as const;
 
 export const NOVEL_FILE_FORMATS = ["epub", "txt"] as const;
 
-export const NOVEL_READER_THEMES = ["light", "sepia", "dark"] as const;
+export const NOVEL_READER_THEMES = [
+  "light",
+  "sepia",
+  "dark",
+  "green",
+  "blue",
+] as const;
 
 export const NOVEL_FONT_FAMILIES = ["serif", "sans"] as const;
+
+export const NOVEL_READING_MODES = ["scroll", "paged"] as const;
+
+export const NOVEL_NOTE_STATUSES = ["visible", "removed"] as const;
+
+export const NOVEL_VOTE_CHOICES = ["remove", "keep"] as const;
+
+export const NOVEL_REPORT_STATUSES = ["pending", "resolved"] as const;

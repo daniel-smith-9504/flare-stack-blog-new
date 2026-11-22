@@ -160,9 +160,12 @@ describe("Novels", () => {
     );
 
     expect(
-      (await NovelService.getPublicNotes({ db, env }, id, 1)).map(
-        (note) => note.id,
-      ),
+      (
+        await NovelService.getPublicNotes(
+          { db, env },
+          { novelId: id, chapterOrder: 1, sort: "newest" },
+        )
+      ).map((note) => note.id),
     ).toEqual([shared.id]);
     expect(
       await NovelService.getOwnNotes({ db, env, session: one.session }, id, 1),
@@ -172,9 +175,12 @@ describe("Novels", () => {
       { db, env, session: one.session },
       { id: shared.id, isPublic: false },
     );
-    expect(await NovelService.getPublicNotes({ db, env }, id, 1)).toHaveLength(
-      0,
-    );
+    expect(
+      await NovelService.getPublicNotes(
+        { db, env },
+        { novelId: id, chapterOrder: 1, sort: "newest" },
+      ),
+    ).toHaveLength(0);
 
     expect(
       await NovelService.deleteNote(

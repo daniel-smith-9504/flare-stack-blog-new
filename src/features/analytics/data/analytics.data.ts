@@ -20,6 +20,9 @@ const dayBucket = sql<number>`cast(${PageViewsTable.createdAt} / ${DAY_SECONDS} 
 export type PageViewRow = {
   path: string;
   postSlug: string | null;
+  /** Set for a novel read page, for the reading report. */
+  novelId?: number | null;
+  novelChapter?: number | null;
   visitorId: string;
   country: string | null;
   region: string | null;

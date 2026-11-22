@@ -1,9 +1,12 @@
 import { z } from "zod";
 import {
   NOVEL_FONT_FAMILIES,
+  NOVEL_NOTE_STATUSES,
   NOVEL_READER_THEMES,
+  NOVEL_READING_MODES,
   NOVEL_SOURCES,
   NOVEL_STATUSES,
+  NOVEL_VOTE_CHOICES,
 } from "@/lib/enum-values";
 import { MAX_PAGE_NUMBER } from "@/lib/constants";
 import { coercedDate } from "@/lib/orpc/dates";
@@ -14,6 +17,8 @@ import {
   NOVEL_LINE_HEIGHT_MAX,
   NOVEL_LINE_HEIGHT_MIN,
   NOVEL_NOTE_MAX_LENGTH,
+  NOVEL_PAGE_WIDTH_MAX,
+  NOVEL_PAGE_WIDTH_MIN,
   NOVEL_QUOTE_MAX_LENGTH,
 } from "@/features/novels/novels.constants";
 
@@ -21,6 +26,9 @@ export const NovelStatusSchema = z.enum(NOVEL_STATUSES);
 export const NovelSourceSchema = z.enum(NOVEL_SOURCES);
 export const NovelReaderThemeSchema = z.enum(NOVEL_READER_THEMES);
 export const NovelFontFamilySchema = z.enum(NOVEL_FONT_FAMILIES);
+export const NovelReadingModeSchema = z.enum(NOVEL_READING_MODES);
+export const NovelNoteStatusSchema = z.enum(NOVEL_NOTE_STATUSES);
+export const NovelVoteChoiceSchema = z.enum(NOVEL_VOTE_CHOICES);
 
 // ==================== what readers get ====================
 
@@ -49,8 +57,16 @@ export const NovelProgressSchema = z.object({
   updatedAt: coercedDate,
 });
 
+export const NovelTagSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  slug: z.string(),
+  novelCount: z.number().int().default(0),
+});
+
 export const NovelDetailSchema = NovelSummarySchema.extend({
   chapters: z.array(NovelChapterSummarySchema),
+  tags: z.array(NovelTagSchema),
 });
 
 export const NovelProgressInputSchema = z.strictObject({
@@ -65,6 +81,11 @@ export const NovelListInputSchema = z.object({
     .max(MAX_PAGE_NUMBER)
     .default(1)
     .describe("The page, from 1. A page past the last answers the last page."),
+  tag: z
+    .string()
+    .max(80)
+    .optional()
+    .describe("Only books carrying this tag's slug."),
 });
 
 export const NovelListResponseSchema = z.object({
@@ -98,12 +119,16 @@ export const PublicNoteSchema = z.object({
   note: z.string(),
   userName: z.string(),
   userImage: z.string().nullable(),
+  likeCount: z.number().int(),
+  likedByMe: z.boolean(),
+  reportCount: z.number().int(),
   createdAt: coercedDate,
 });
 
 export const PublicNotesInputSchema = z.strictObject({
   novelId: PathIdSchema,
   chapterOrder: z.number().int().min(1),
+  sort: z.enum(["newest", "hottest"]).default("newest"),
 });
 
 export const PublicNotesSchema = z.array(PublicNoteSchema);
@@ -160,6 +185,8 @@ export const NovelSettingsSchema = z.object({
   fontSize: z.number().int(),
   lineHeight: z.number(),
   fontFamily: NovelFontFamilySchema,
+  pageWidth: z.number().int(),
+  readingMode: NovelReadingModeSchema,
 });
 
 export const SaveSettingsInputSchema = z
@@ -177,8 +204,111 @@ export const SaveSettingsInputSchema = z
       .max(NOVEL_LINE_HEIGHT_MAX)
       .optional(),
     fontFamily: NovelFontFamilySchema.optional(),
+    pageWidth: z
+      .number()
+      .int()
+      .min(NOVEL_PAGE_WIDTH_MIN)
+      .max(NOVEL_PAGE_WIDTH_MAX)
+      .optional(),
+    readingMode: NovelReadingModeSchema.optional(),
   })
   .describe("The fields to save; at least one.");
+
+// ==================== bookmarks and reading time ====================
+
+export const NovelBookmarkSchema = z.object({
+  id: z.number().int(),
+  chapterOrder: z.number().int(),
+  chapterTitle: z.string(),
+  createdAt: coercedDate,
+});
+
+export const NovelBookmarksSchema = z.array(NovelBookmarkSchema);
+
+export const NovelBookmarksInputSchema = z.strictObject({
+  novelId: PathIdSchema,
+});
+
+export const SetBookmarkInputSchema = z.strictObject({
+  novelId: PathIdSchema,
+  chapterOrder: z.number().int().min(1),
+  bookmarked: z.boolean(),
+});
+
+export const SetBookmarkOutputSchema = z.object({
+  bookmarked: z.boolean(),
+});
+
+export const ReadingHeartbeatInputSchema = z.strictObject({
+  novelId: PathIdSchema,
+  chapterOrder: z.number().int().min(1),
+  seconds: z.number().int().min(1).max(120),
+  words: z.number().int().min(0).max(200_000),
+});
+
+// ==================== the social layer on shared highlights ====================
+
+export const LikeNoteInputSchema = z.strictObject({ id: PathIdSchema });
+
+export const LikeNoteOutputSchema = z.object({
+  liked: z.boolean(),
+  likeCount: z.number().int(),
+});
+
+export const ReportNoteInputSchema = z.strictObject({
+  id: PathIdSchema,
+  reason: z.string().max(500).default(""),
+});
+
+export const ReportNoteOutputSchema = z.object({
+  reported: z.boolean(),
+  reportCount: z.number().int(),
+});
+
+export const VoteNoteInputSchema = z.strictObject({
+  id: PathIdSchema,
+  choice: NovelVoteChoiceSchema,
+});
+
+export const VoteNoteOutputSchema = z.object({
+  choice: NovelVoteChoiceSchema.nullable(),
+  removeVotes: z.number().int(),
+  keepVotes: z.number().int(),
+});
+
+export const AdminNoteSchema = z.object({
+  id: z.number().int(),
+  novelId: z.number().int(),
+  novelTitle: z.string(),
+  chapterOrder: z.number().int(),
+  quote: z.string(),
+  note: z.string(),
+  userName: z.string(),
+  userImage: z.string().nullable(),
+  status: NovelNoteStatusSchema,
+  reportCount: z.number().int(),
+  likes: z.number().int(),
+  removeVotes: z.number().int(),
+  keepVotes: z.number().int(),
+  removeReason: z.string().nullable(),
+  createdAt: coercedDate,
+});
+
+export const AdminNoteListSchema = z.array(AdminNoteSchema);
+
+export const AdminNoteListInputSchema = z.strictObject({
+  status: NovelNoteStatusSchema.optional(),
+  limit: z.number().int().min(1).max(200).default(100),
+});
+
+export const ModerateNoteInputSchema = z.strictObject({
+  id: PathIdSchema,
+  reason: z.string().max(500).default(""),
+});
+
+export const ModerateNoteOutputSchema = z.object({
+  status: NovelNoteStatusSchema,
+});
 
 // ==================== the Admin's view ====================
 
@@ -230,12 +360,144 @@ export const ImportAcceptedSchema = z.object({
   status: NovelStatusSchema,
 });
 
+// ==================== the Admin's chapters ====================
+
+export const AdminChapterSchema = z.object({
+  novelId: z.number().int(),
+  order: z.number().int(),
+  title: z.string(),
+  wordCount: z.number().int(),
+  version: z.number().int(),
+});
+
+export const AdminChapterListInputSchema = z.strictObject({
+  novelId: PathIdSchema,
+});
+
+export const AdminChapterListSchema = z.array(AdminChapterSchema);
+
+export const AdminChapterInputSchema = z.strictObject({
+  novelId: PathIdSchema,
+  order: z.number().int().min(1),
+});
+
+export const AdminChapterContentSchema = AdminChapterSchema.extend({
+  content: z.string(),
+});
+
+export const CreateChapterInputSchema = z.strictObject({
+  novelId: PathIdSchema,
+  title: z.string().max(300).default(""),
+  content: z.string().min(1).max(2_000_000),
+  /** Appended at the end when omitted. */
+  order: z.number().int().min(1).optional(),
+});
+
+export const UpdateChapterInputSchema = z.strictObject({
+  novelId: PathIdSchema,
+  order: z.number().int().min(1),
+  title: z.string().max(300).default(""),
+  content: z.string().min(1).max(2_000_000),
+  /** The version the editor loaded; a mismatch is a conflict. */
+  version: z.number().int().min(0),
+});
+
+export const DeleteChapterInputSchema = z.strictObject({
+  novelId: PathIdSchema,
+  order: z.number().int().min(1),
+});
+
+export const MoveChapterInputSchema = z.strictObject({
+  novelId: PathIdSchema,
+  from: z.number().int().min(1),
+  to: z.number().int().min(1),
+});
+
+export const BatchDeleteChaptersInputSchema = z.strictObject({
+  novelId: PathIdSchema,
+  orders: z.array(z.number().int().min(1)).min(1).max(200),
+});
+
+export const AdminChapterOutputSchema = z.object({ success: z.boolean() });
+
+// ==================== the Admin's tags ====================
+
+export const NovelTagListSchema = z.array(NovelTagSchema);
+
+export const CreateNovelTagInputSchema = z.strictObject({
+  name: z.string().min(1).max(60),
+});
+
+export const RenameNovelTagInputSchema = z.strictObject({
+  id: PathIdSchema,
+  name: z.string().min(1).max(60),
+});
+
+export const DeleteNovelTagInputSchema = z.strictObject({ id: PathIdSchema });
+
+export const NovelTagOutputSchema = NovelTagSchema;
+
+export const SetNovelTagsInputSchema = z.strictObject({
+  novelId: PathIdSchema,
+  tagIds: z.array(PathIdSchema).max(20),
+});
+
+export const AdminNovelTagsSchema = z.object({
+  tags: NovelTagListSchema,
+  assigned: z.array(z.number().int()),
+});
+
+// ==================== the Admin's reading report ====================
+
+export const AdminNovelStatsInputSchema = z.strictObject({
+  days: z.number().int().min(1).max(365).default(30),
+});
+
+export const AdminNovelStatsSchema = z.object({
+  days: z.number().int(),
+  summary: z.object({
+    views: z.number().int(),
+    visitors: z.number().int(),
+    seconds: z.number().int(),
+    words: z.number().int(),
+  }),
+  daily: z.array(
+    z.object({
+      day: z.number().int(),
+      views: z.number().int(),
+      seconds: z.number().int(),
+    }),
+  ),
+  topNovels: z.array(
+    z.object({
+      id: z.number().int(),
+      title: z.string(),
+      views: z.number().int(),
+      seconds: z.number().int(),
+    }),
+  ),
+  topChapters: z.array(
+    z.object({
+      novelId: z.number().int(),
+      novelTitle: z.string(),
+      chapterOrder: z.number().int(),
+      views: z.number().int(),
+    }),
+  ),
+});
+
 export type NovelSummary = z.infer<typeof NovelSummarySchema>;
 export type NovelDetail = z.infer<typeof NovelDetailSchema>;
 export type NovelChapterContent = z.infer<typeof NovelChapterSchema>;
 export type PublicNote = z.infer<typeof PublicNoteSchema>;
 export type OwnNote = z.infer<typeof OwnNoteSchema>;
 export type NovelSettings = z.infer<typeof NovelSettingsSchema>;
+export type NovelTag = z.infer<typeof NovelTagSchema>;
+export type NovelBookmark = z.infer<typeof NovelBookmarkSchema>;
 export type AdminNovel = z.infer<typeof AdminNovelSchema>;
+export type AdminChapter = z.infer<typeof AdminChapterSchema>;
+export type AdminChapterContent = z.infer<typeof AdminChapterContentSchema>;
+export type AdminNote = z.infer<typeof AdminNoteSchema>;
+export type AdminNovelStats = z.infer<typeof AdminNovelStatsSchema>;
 export type GutenbergBook = z.infer<typeof GutenbergBookSchema>;
 export type SaveSettingsInput = z.infer<typeof SaveSettingsInputSchema>;

@@ -20,3 +20,16 @@ export const pageSearchSchema = z.object({
 export const commentSearchSchema = z.object({
   comment: z.optional(z.coerce.number()),
 });
+
+/** `?page=` and `?tag=` of the shelf; a tag that names nothing is no filter. */
+export const novelsSearchSchema = z.object({
+  page: z.catch(
+    z.optional(
+      z.coerce
+        .number()
+        .check(z.int(), z.minimum(1), z.maximum(MAX_PAGE_NUMBER)),
+    ),
+    undefined,
+  ),
+  tag: z.catch(z.optional(z.string().check(z.maxLength(80))), undefined),
+});

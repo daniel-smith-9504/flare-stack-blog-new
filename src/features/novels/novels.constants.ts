@@ -20,6 +20,27 @@ export const NOVEL_FONT_SIZE_MAX = 32;
 export const NOVEL_LINE_HEIGHT_MIN = 1.4;
 export const NOVEL_LINE_HEIGHT_MAX = 2.4;
 
+export const NOVEL_PAGE_WIDTH_MIN = 560;
+export const NOVEL_PAGE_WIDTH_MAX = 960;
+export const NOVEL_PAGE_WIDTH_DEFAULT = 720;
+
+/** A reading heartbeat's longest interval, so an idle tab adds no time. */
+export const NOVEL_READING_HEARTBEAT_SECONDS = 30;
+
+/** Shared highlights longer than this start folded, as the reference does. */
+export const NOVEL_NOTE_COLLAPSE_LENGTH = 220;
+
+/** Reports on one highlight needed before the community may vote. */
+export const NOVEL_REPORT_VOTE_THRESHOLD = 3;
+
+/** Points a reader earns for casting a vote, and an Admin loses per report. */
+export const NOVEL_VOTE_POINTS = 0.1;
+export const NOVEL_RESOLVED_REPORT_POINTS = 0.2;
+export const NOVEL_IGNORED_REPORT_POINTS = -1;
+
+/** A removed highlight's author is muted this many days, step by step. */
+export const NOVEL_MUTE_DAYS = [1, 3, 7, 30] as const;
+
 /** The R2 prefix every chapter of a book lives under. */
 export function novelChapterPrefix(novelId: number) {
   return `novels/${novelId}/chapters/`;
@@ -35,4 +56,6 @@ export const DEFAULT_NOVEL_SETTINGS: NovelSettings = {
   fontSize: 18,
   lineHeight: 1.8,
   fontFamily: "serif",
+  pageWidth: NOVEL_PAGE_WIDTH_DEFAULT,
+  readingMode: "scroll",
 };

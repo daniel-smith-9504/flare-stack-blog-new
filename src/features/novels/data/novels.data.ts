@@ -1,20 +1,33 @@
-import { and, asc, count, desc, eq, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import {
+  NovelBookmarksTable,
   NovelChaptersTable,
+  NovelMutesTable,
   NovelNotesTable,
+  NovelNoteLikesTable,
+  NovelNoteReportsTable,
+  NovelNoteVotesTable,
   NovelProgressTable,
+  NovelReadingDailyTable,
+  NovelScoreLogsTable,
   NovelSettingsTable,
+  NovelTagLinksTable,
+  NovelTagsTable,
   NovelsTable,
+  PageViewsTable,
   user,
   type Novel,
   type NovelFileFormat,
+  type NovelNoteStatus,
   type NovelStatus,
+  type NovelVoteChoice,
 } from "@/lib/db/schema";
 import type {
   NovelSettings,
   SaveSettingsInput,
 } from "@/features/novels/novels.schema";
+import { NOVEL_MUTE_DAYS } from "@/features/novels/novels.constants";
 
 /** CJK characters and Latin words, so a mixed book counts the usual way. */
 export function countWords(text: string) {
@@ -39,7 +52,24 @@ const summaryColumns = {
   updatedAt: NovelsTable.updatedAt,
 };
 
-export async function countReadyNovels(db: DB) {
+export async function countReadyNovels(db: DB, tagSlug?: string) {
+  if (tagSlug) {
+    const [row] = await db
+      .select({ total: count() })
+      .from(NovelsTable)
+      .innerJoin(
+        NovelTagLinksTable,
+        eq(NovelTagLinksTable.novelId, NovelsTable.id),
+      )
+      .innerJoin(
+        NovelTagsTable,
+        eq(NovelTagsTable.id, NovelTagLinksTable.tagId),
+      )
+      .where(
+        and(eq(NovelsTable.status, "ready"), eq(NovelTagsTable.slug, tagSlug)),
+      );
+    return Number(row?.total ?? 0);
+  }
   const [row] = await db
     .select({ total: count() })
     .from(NovelsTable)
@@ -49,8 +79,30 @@ export async function countReadyNovels(db: DB) {
 
 export async function findReadyNovels(
   db: DB,
-  options: { limit: number; offset: number },
+  options: { limit: number; offset: number; tagSlug?: string },
 ) {
+  if (options.tagSlug) {
+    return db
+      .select(summaryColumns)
+      .from(NovelsTable)
+      .innerJoin(
+        NovelTagLinksTable,
+        eq(NovelTagLinksTable.novelId, NovelsTable.id),
+      )
+      .innerJoin(
+        NovelTagsTable,
+        eq(NovelTagsTable.id, NovelTagLinksTable.tagId),
+      )
+      .where(
+        and(
+          eq(NovelsTable.status, "ready"),
+          eq(NovelTagsTable.slug, options.tagSlug),
+        ),
+      )
+      .orderBy(desc(NovelsTable.updatedAt), desc(NovelsTable.id))
+      .limit(options.limit)
+      .offset(options.offset);
+  }
   return db
     .select(summaryColumns)
     .from(NovelsTable)
@@ -58,6 +110,39 @@ export async function findReadyNovels(
     .orderBy(desc(NovelsTable.updatedAt), desc(NovelsTable.id))
     .limit(options.limit)
     .offset(options.offset);
+}
+
+/** Every shelf tag with the number of ready books carrying it. */
+export async function listTags(db: DB) {
+  return db
+    .select({
+      id: NovelTagsTable.id,
+      name: NovelTagsTable.name,
+      slug: NovelTagsTable.slug,
+      novelCount: count(NovelTagLinksTable.novelId),
+    })
+    .from(NovelTagsTable)
+    .leftJoin(
+      NovelTagLinksTable,
+      eq(NovelTagLinksTable.tagId, NovelTagsTable.id),
+    )
+    .innerJoin(NovelsTable, eq(NovelsTable.id, NovelTagLinksTable.novelId))
+    .where(eq(NovelsTable.status, "ready"))
+    .groupBy(NovelTagsTable.id, NovelTagsTable.name, NovelTagsTable.slug)
+    .orderBy(asc(NovelTagsTable.name));
+}
+
+export async function listNovelTags(db: DB, novelId: number) {
+  return db
+    .select({
+      id: NovelTagsTable.id,
+      name: NovelTagsTable.name,
+      slug: NovelTagsTable.slug,
+    })
+    .from(NovelTagLinksTable)
+    .innerJoin(NovelTagsTable, eq(NovelTagsTable.id, NovelTagLinksTable.tagId))
+    .where(eq(NovelTagLinksTable.novelId, novelId))
+    .orderBy(asc(NovelTagsTable.name));
 }
 
 export async function findNovelById(db: DB, id: number): Promise<Novel | null> {
@@ -327,8 +412,20 @@ export async function listPublicNotes(
   db: DB,
   novelId: number,
   chapterOrder: number,
+  options: { viewerId?: string; sort?: "newest" | "hottest" } = {},
 ) {
-  return db
+  const likeCount = sql<number>`(
+    select count(*) from ${NovelNoteLikesTable}
+    where ${NovelNoteLikesTable.noteId} = ${NovelNotesTable.id}
+  )`;
+  const likedByMe = options.viewerId
+    ? sql<number>`exists(
+        select 1 from ${NovelNoteLikesTable}
+        where ${NovelNoteLikesTable.noteId} = ${NovelNotesTable.id}
+          and ${NovelNoteLikesTable.userId} = ${options.viewerId}
+      )`
+    : sql<number>`0`;
+  const rows = await db
     .select({
       id: NovelNotesTable.id,
       chapterOrder: NovelNotesTable.chapterOrder,
@@ -336,6 +433,9 @@ export async function listPublicNotes(
       note: NovelNotesTable.note,
       userName: user.name,
       userImage: user.image,
+      likeCount,
+      likedByMe,
+      reportCount: NovelNotesTable.reportCount,
       createdAt: NovelNotesTable.createdAt,
     })
     .from(NovelNotesTable)
@@ -345,9 +445,20 @@ export async function listPublicNotes(
         eq(NovelNotesTable.novelId, novelId),
         eq(NovelNotesTable.chapterOrder, chapterOrder),
         eq(NovelNotesTable.isPublic, true),
+        eq(NovelNotesTable.status, "visible"),
       ),
     )
-    .orderBy(asc(NovelNotesTable.startOffset));
+    .orderBy(
+      options.sort === "hottest"
+        ? desc(likeCount)
+        : desc(NovelNotesTable.createdAt),
+      desc(NovelNotesTable.id),
+    );
+  return rows.map((row) => ({
+    ...row,
+    likeCount: Number(row.likeCount),
+    likedByMe: Boolean(row.likedByMe),
+  }));
 }
 
 export async function insertNote(
@@ -424,6 +535,8 @@ export async function findSettings(
       fontSize: NovelSettingsTable.fontSize,
       lineHeight: NovelSettingsTable.lineHeight,
       fontFamily: NovelSettingsTable.fontFamily,
+      pageWidth: NovelSettingsTable.pageWidth,
+      readingMode: NovelSettingsTable.readingMode,
     })
     .from(NovelSettingsTable)
     .where(eq(NovelSettingsTable.userId, userId))
@@ -464,4 +577,796 @@ export async function listAdminNovels(db: DB, limit = 200) {
     .from(NovelsTable)
     .orderBy(desc(NovelsTable.createdAt), desc(NovelsTable.id))
     .limit(limit);
+}
+
+// ==================== bookmarks ====================
+
+export async function listBookmarks(db: DB, userId: string, novelId: number) {
+  return db
+    .select({
+      id: NovelBookmarksTable.id,
+      chapterOrder: NovelBookmarksTable.chapterOrder,
+      chapterTitle: NovelChaptersTable.title,
+      createdAt: NovelBookmarksTable.createdAt,
+    })
+    .from(NovelBookmarksTable)
+    .innerJoin(
+      NovelChaptersTable,
+      and(
+        eq(NovelChaptersTable.novelId, NovelBookmarksTable.novelId),
+        eq(NovelChaptersTable.chapterOrder, NovelBookmarksTable.chapterOrder),
+      ),
+    )
+    .where(
+      and(
+        eq(NovelBookmarksTable.userId, userId),
+        eq(NovelBookmarksTable.novelId, novelId),
+      ),
+    )
+    .orderBy(desc(NovelBookmarksTable.createdAt));
+}
+
+export async function addBookmark(
+  db: DB,
+  userId: string,
+  novelId: number,
+  chapterOrder: number,
+) {
+  await db
+    .insert(NovelBookmarksTable)
+    .values({ userId, novelId, chapterOrder })
+    .onConflictDoNothing();
+}
+
+export async function removeBookmark(
+  db: DB,
+  userId: string,
+  novelId: number,
+  chapterOrder: number,
+) {
+  await db
+    .delete(NovelBookmarksTable)
+    .where(
+      and(
+        eq(NovelBookmarksTable.userId, userId),
+        eq(NovelBookmarksTable.novelId, novelId),
+        eq(NovelBookmarksTable.chapterOrder, chapterOrder),
+      ),
+    );
+}
+
+export async function isBookmarked(
+  db: DB,
+  userId: string,
+  novelId: number,
+  chapterOrder: number,
+) {
+  const [row] = await db
+    .select({ id: NovelBookmarksTable.id })
+    .from(NovelBookmarksTable)
+    .where(
+      and(
+        eq(NovelBookmarksTable.userId, userId),
+        eq(NovelBookmarksTable.novelId, novelId),
+        eq(NovelBookmarksTable.chapterOrder, chapterOrder),
+      ),
+    )
+    .limit(1);
+  return Boolean(row);
+}
+
+// ==================== reading time ====================
+
+/** Adds one heartbeat to the reader's UTC day for this book. */
+export async function addReadingTime(
+  db: DB,
+  userId: string,
+  input: {
+    novelId: number;
+    chapterOrder: number;
+    seconds: number;
+    words: number;
+    countsChapter: boolean;
+  },
+) {
+  const day = new Date().toISOString().slice(0, 10);
+  await db
+    .insert(NovelReadingDailyTable)
+    .values({
+      userId,
+      novelId: input.novelId,
+      day,
+      seconds: input.seconds,
+      words: input.words,
+      chapters: input.countsChapter ? 1 : 0,
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: [
+        NovelReadingDailyTable.userId,
+        NovelReadingDailyTable.novelId,
+        NovelReadingDailyTable.day,
+      ],
+      set: {
+        seconds: sql`${NovelReadingDailyTable.seconds} + ${input.seconds}`,
+        words: sql`${NovelReadingDailyTable.words} + ${input.words}`,
+        chapters: input.countsChapter
+          ? sql`${NovelReadingDailyTable.chapters} + 1`
+          : NovelReadingDailyTable.chapters,
+        updatedAt: new Date(),
+      },
+    });
+}
+
+// ==================== likes, reports and votes ====================
+
+export async function findNote(db: DB, id: number) {
+  const [row] = await db
+    .select({
+      id: NovelNotesTable.id,
+      userId: NovelNotesTable.userId,
+      novelId: NovelNotesTable.novelId,
+      isPublic: NovelNotesTable.isPublic,
+      status: NovelNotesTable.status,
+      reportCount: NovelNotesTable.reportCount,
+    })
+    .from(NovelNotesTable)
+    .where(eq(NovelNotesTable.id, id))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function countLikes(db: DB, noteId: number) {
+  const [row] = await db
+    .select({ total: count() })
+    .from(NovelNoteLikesTable)
+    .where(eq(NovelNoteLikesTable.noteId, noteId));
+  return Number(row?.total ?? 0);
+}
+
+export async function likeNote(db: DB, noteId: number, userId: string) {
+  const [existing] = await db
+    .select({ noteId: NovelNoteLikesTable.noteId })
+    .from(NovelNoteLikesTable)
+    .where(
+      and(
+        eq(NovelNoteLikesTable.noteId, noteId),
+        eq(NovelNoteLikesTable.userId, userId),
+      ),
+    )
+    .limit(1);
+  if (existing) {
+    await db
+      .delete(NovelNoteLikesTable)
+      .where(
+        and(
+          eq(NovelNoteLikesTable.noteId, noteId),
+          eq(NovelNoteLikesTable.userId, userId),
+        ),
+      );
+  } else {
+    await db
+      .insert(NovelNoteLikesTable)
+      .values({ noteId, userId })
+      .onConflictDoNothing();
+  }
+  return { liked: !existing, likeCount: await countLikes(db, noteId) };
+}
+
+export async function insertReport(
+  db: DB,
+  input: {
+    noteId: number;
+    reporterId: string | null;
+    reporterKey: string;
+    reason: string;
+  },
+) {
+  const inserted = await db
+    .insert(NovelNoteReportsTable)
+    .values({
+      noteId: input.noteId,
+      reporterId: input.reporterId,
+      reporterKey: input.reporterKey,
+      reason: input.reason,
+    })
+    .onConflictDoNothing()
+    .returning({ id: NovelNoteReportsTable.id });
+  if (inserted.length > 0) {
+    await db
+      .update(NovelNotesTable)
+      .set({ reportCount: sql`${NovelNotesTable.reportCount} + 1` })
+      .where(eq(NovelNotesTable.id, input.noteId));
+    return {
+      reported: true,
+      reportCount: await countReports(db, input.noteId),
+    };
+  }
+  return { reported: false, reportCount: await countReports(db, input.noteId) };
+}
+
+export async function countReports(db: DB, noteId: number) {
+  const [row] = await db
+    .select({ total: count() })
+    .from(NovelNoteReportsTable)
+    .where(eq(NovelNoteReportsTable.noteId, noteId));
+  return Number(row?.total ?? 0);
+}
+
+export async function castVote(
+  db: DB,
+  noteId: number,
+  userId: string,
+  choice: NovelVoteChoice,
+) {
+  await db
+    .insert(NovelNoteVotesTable)
+    .values({ noteId, userId, choice })
+    .onConflictDoUpdate({
+      target: [NovelNoteVotesTable.noteId, NovelNoteVotesTable.userId],
+      set: { choice },
+    });
+  return countVotes(db, noteId);
+}
+
+export async function countVotes(db: DB, noteId: number) {
+  const rows = await db
+    .select({ choice: NovelNoteVotesTable.choice, total: count() })
+    .from(NovelNoteVotesTable)
+    .where(eq(NovelNoteVotesTable.noteId, noteId))
+    .groupBy(NovelNoteVotesTable.choice);
+  const of = (choice: NovelVoteChoice) =>
+    Number(rows.find((row) => row.choice === choice)?.total ?? 0);
+  return { removeVotes: of("remove"), keepVotes: of("keep") };
+}
+
+export async function findVote(db: DB, noteId: number, userId: string) {
+  const [row] = await db
+    .select({ choice: NovelNoteVotesTable.choice })
+    .from(NovelNoteVotesTable)
+    .where(
+      and(
+        eq(NovelNoteVotesTable.noteId, noteId),
+        eq(NovelNoteVotesTable.userId, userId),
+      ),
+    )
+    .limit(1);
+  return row?.choice ?? null;
+}
+
+// ==================== moderation ====================
+
+export async function listAdminNotes(
+  db: DB,
+  options: { status?: NovelNoteStatus; limit: number },
+) {
+  const likes = sql<number>`(
+    select count(*) from ${NovelNoteLikesTable}
+    where ${NovelNoteLikesTable.noteId} = ${NovelNotesTable.id}
+  )`;
+  const removeVotes = sql<number>`(
+    select count(*) from ${NovelNoteVotesTable}
+    where ${NovelNoteVotesTable.noteId} = ${NovelNotesTable.id}
+      and ${NovelNoteVotesTable.choice} = 'remove'
+  )`;
+  const keepVotes = sql<number>`(
+    select count(*) from ${NovelNoteVotesTable}
+    where ${NovelNoteVotesTable.noteId} = ${NovelNotesTable.id}
+      and ${NovelNoteVotesTable.choice} = 'keep'
+  )`;
+  const rows = await db
+    .select({
+      id: NovelNotesTable.id,
+      novelId: NovelNotesTable.novelId,
+      novelTitle: NovelsTable.title,
+      chapterOrder: NovelNotesTable.chapterOrder,
+      quote: NovelNotesTable.quote,
+      note: NovelNotesTable.note,
+      userName: user.name,
+      userImage: user.image,
+      status: NovelNotesTable.status,
+      reportCount: NovelNotesTable.reportCount,
+      likes,
+      removeVotes,
+      keepVotes,
+      removeReason: NovelNotesTable.removeReason,
+      createdAt: NovelNotesTable.createdAt,
+    })
+    .from(NovelNotesTable)
+    .innerJoin(user, eq(user.id, NovelNotesTable.userId))
+    .innerJoin(NovelsTable, eq(NovelsTable.id, NovelNotesTable.novelId))
+    .where(
+      options.status ? eq(NovelNotesTable.status, options.status) : undefined,
+    )
+    .orderBy(desc(NovelNotesTable.reportCount), desc(NovelNotesTable.createdAt))
+    .limit(options.limit);
+  return rows.map((row) => ({
+    ...row,
+    likes: Number(row.likes),
+    removeVotes: Number(row.removeVotes),
+    keepVotes: Number(row.keepVotes),
+  }));
+}
+
+export async function setNoteStatus(
+  db: DB,
+  id: number,
+  status: NovelNoteStatus,
+  data: {
+    removedBy?: string | null;
+    removeReason?: string | null;
+  } = {},
+) {
+  const [row] = await db
+    .update(NovelNotesTable)
+    .set({
+      status,
+      removedBy: status === "removed" ? (data.removedBy ?? null) : null,
+      removedAt: status === "removed" ? new Date() : null,
+      removeReason: status === "removed" ? (data.removeReason ?? null) : null,
+      updatedAt: new Date(),
+    })
+    .where(eq(NovelNotesTable.id, id))
+    .returning({ status: NovelNotesTable.status });
+  return row?.status ?? null;
+}
+
+export async function resolveReports(db: DB, noteId: number) {
+  await db
+    .update(NovelNoteReportsTable)
+    .set({ status: "resolved" })
+    .where(eq(NovelNoteReportsTable.noteId, noteId));
+}
+
+export async function addScore(
+  db: DB,
+  userId: string,
+  delta: number,
+  reason: string,
+) {
+  await db.insert(NovelScoreLogsTable).values({ userId, delta, reason });
+}
+
+export async function findActiveMute(db: DB, userId: string) {
+  const [row] = await db
+    .select({ id: NovelMutesTable.id, until: NovelMutesTable.until })
+    .from(NovelMutesTable)
+    .where(eq(NovelMutesTable.userId, userId))
+    .orderBy(desc(NovelMutesTable.level), desc(NovelMutesTable.createdAt))
+    .limit(1);
+  if (!row) return null;
+  if (row.until === null) return { permanent: true, until: null };
+  return row.until.getTime() > Date.now()
+    ? { permanent: false, until: row.until }
+    : null;
+}
+
+/** A mute steps 1 → 3 → 7 → 30 days and is permanent from the fifth. */
+export async function muteUser(db: DB, userId: string, reason: string) {
+  const [row] = await db
+    .select({ total: count() })
+    .from(NovelMutesTable)
+    .where(eq(NovelMutesTable.userId, userId));
+  const level = Number(row?.total ?? 0) + 1;
+  const days = NOVEL_MUTE_DAYS[Math.min(level - 1, NOVEL_MUTE_DAYS.length - 1)];
+  const until =
+    level > NOVEL_MUTE_DAYS.length
+      ? null
+      : new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  await db.insert(NovelMutesTable).values({ userId, level, until, reason });
+  return { level, until };
+}
+
+// ==================== the Admin's chapters ====================
+
+const chapterColumns = {
+  novelId: NovelChaptersTable.novelId,
+  order: NovelChaptersTable.chapterOrder,
+  title: NovelChaptersTable.title,
+  wordCount: NovelChaptersTable.wordCount,
+  version: NovelChaptersTable.version,
+};
+
+export async function listAdminChapters(db: DB, novelId: number) {
+  return db
+    .select(chapterColumns)
+    .from(NovelChaptersTable)
+    .where(eq(NovelChaptersTable.novelId, novelId))
+    .orderBy(asc(NovelChaptersTable.chapterOrder));
+}
+
+export async function findAdminChapter(db: DB, novelId: number, order: number) {
+  const [row] = await db
+    .select(chapterColumns)
+    .from(NovelChaptersTable)
+    .where(
+      and(
+        eq(NovelChaptersTable.novelId, novelId),
+        eq(NovelChaptersTable.chapterOrder, order),
+      ),
+    )
+    .limit(1);
+  return row ?? null;
+}
+
+export async function findMaxChapterOrder(db: DB, novelId: number) {
+  const [row] = await db
+    .select({ max: sql<number>`max(${NovelChaptersTable.chapterOrder})` })
+    .from(NovelChaptersTable)
+    .where(eq(NovelChaptersTable.novelId, novelId));
+  return Number(row?.max ?? 0);
+}
+
+/** Makes room at `order` by shifting everything from it up one. */
+export async function shiftChaptersUp(db: DB, novelId: number, order: number) {
+  await db
+    .update(NovelChaptersTable)
+    .set({ chapterOrder: sql`-(${NovelChaptersTable.chapterOrder} + 1)` })
+    .where(
+      and(
+        eq(NovelChaptersTable.novelId, novelId),
+        gte(NovelChaptersTable.chapterOrder, order),
+      ),
+    );
+  await db
+    .update(NovelChaptersTable)
+    .set({ chapterOrder: sql`-${NovelChaptersTable.chapterOrder} - 1` })
+    .where(
+      and(
+        eq(NovelChaptersTable.novelId, novelId),
+        lt(NovelChaptersTable.chapterOrder, 0),
+      ),
+    );
+}
+
+export async function insertChapterRow(
+  db: DB,
+  novelId: number,
+  order: number,
+  title: string,
+  wordCount: number,
+) {
+  await db.insert(NovelChaptersTable).values({
+    novelId,
+    chapterOrder: order,
+    title,
+    wordCount,
+    version: 0,
+  });
+}
+
+export async function updateChapterRow(
+  db: DB,
+  input: {
+    novelId: number;
+    order: number;
+    title: string;
+    wordCount: number;
+    version: number;
+  },
+) {
+  const [row] = await db
+    .update(NovelChaptersTable)
+    .set({
+      title: input.title,
+      wordCount: input.wordCount,
+      version: sql`${NovelChaptersTable.version} + 1`,
+    })
+    .where(
+      and(
+        eq(NovelChaptersTable.novelId, input.novelId),
+        eq(NovelChaptersTable.chapterOrder, input.order),
+        eq(NovelChaptersTable.version, input.version),
+      ),
+    )
+    .returning(chapterColumns);
+  return row ?? null;
+}
+
+/** Renumbers a book's chapters 1..n, in two phases to keep the unique index. */
+async function renumberChapters(db: DB, novelId: number) {
+  const rows = await db
+    .select({ id: NovelChaptersTable.id })
+    .from(NovelChaptersTable)
+    .where(eq(NovelChaptersTable.novelId, novelId))
+    .orderBy(asc(NovelChaptersTable.chapterOrder));
+  if (rows.length === 0) return;
+  const statements: Array<BatchItem<"sqlite">> = [
+    ...rows.map((row, index) =>
+      db
+        .update(NovelChaptersTable)
+        .set({ chapterOrder: -(index + 1) })
+        .where(eq(NovelChaptersTable.id, row.id)),
+    ),
+    ...rows.map((row, index) =>
+      db
+        .update(NovelChaptersTable)
+        .set({ chapterOrder: index + 1 })
+        .where(eq(NovelChaptersTable.id, row.id)),
+    ),
+  ];
+  for (let i = 0; i < statements.length; i += 40)
+    await db.batch(
+      statements.slice(i, i + 40) as [
+        BatchItem<"sqlite">,
+        ...Array<BatchItem<"sqlite">>,
+      ],
+    );
+}
+
+export async function deleteChapterRows(
+  db: DB,
+  novelId: number,
+  orders: number[],
+) {
+  await db
+    .delete(NovelChaptersTable)
+    .where(
+      and(
+        eq(NovelChaptersTable.novelId, novelId),
+        inArray(NovelChaptersTable.chapterOrder, orders),
+      ),
+    );
+  await renumberChapters(db, novelId);
+}
+
+export async function swapChapters(
+  db: DB,
+  novelId: number,
+  from: number,
+  to: number,
+) {
+  await db
+    .update(NovelChaptersTable)
+    .set({ chapterOrder: -1 })
+    .where(
+      and(
+        eq(NovelChaptersTable.novelId, novelId),
+        eq(NovelChaptersTable.chapterOrder, from),
+      ),
+    );
+  await db
+    .update(NovelChaptersTable)
+    .set({ chapterOrder: from })
+    .where(
+      and(
+        eq(NovelChaptersTable.novelId, novelId),
+        eq(NovelChaptersTable.chapterOrder, to),
+      ),
+    );
+  await db
+    .update(NovelChaptersTable)
+    .set({ chapterOrder: to })
+    .where(
+      and(
+        eq(NovelChaptersTable.novelId, novelId),
+        eq(NovelChaptersTable.chapterOrder, -1),
+      ),
+    );
+}
+
+export async function setNovelChapterTotals(
+  db: DB,
+  novelId: number,
+  chapterCount: number,
+  wordCount: number,
+) {
+  await db
+    .update(NovelsTable)
+    .set({ chapterCount, wordCount, updatedAt: new Date() })
+    .where(eq(NovelsTable.id, novelId));
+}
+
+// ==================== the Admin's tags ====================
+
+export function novelTagSlug(name: string) {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[\s/]+/gu, "-")
+    .replace(/^-+|-+$/gu, "")
+    .slice(0, 60);
+}
+
+export async function listAdminTags(db: DB) {
+  return db
+    .select({
+      id: NovelTagsTable.id,
+      name: NovelTagsTable.name,
+      slug: NovelTagsTable.slug,
+      novelCount: count(NovelTagLinksTable.novelId),
+    })
+    .from(NovelTagsTable)
+    .leftJoin(
+      NovelTagLinksTable,
+      eq(NovelTagLinksTable.tagId, NovelTagsTable.id),
+    )
+    .groupBy(NovelTagsTable.id, NovelTagsTable.name, NovelTagsTable.slug)
+    .orderBy(asc(NovelTagsTable.name));
+}
+
+export async function createTag(db: DB, name: string, slug: string) {
+  const [row] = await db
+    .insert(NovelTagsTable)
+    .values({ name, slug })
+    .onConflictDoNothing()
+    .returning({
+      id: NovelTagsTable.id,
+      name: NovelTagsTable.name,
+      slug: NovelTagsTable.slug,
+    });
+  return row ?? null;
+}
+
+export async function renameTag(
+  db: DB,
+  id: number,
+  name: string,
+  slug: string,
+) {
+  const [row] = await db
+    .update(NovelTagsTable)
+    .set({ name, slug })
+    .where(eq(NovelTagsTable.id, id))
+    .returning({
+      id: NovelTagsTable.id,
+      name: NovelTagsTable.name,
+      slug: NovelTagsTable.slug,
+    });
+  return row ?? null;
+}
+
+export async function deleteTag(db: DB, id: number) {
+  const deleted = await db
+    .delete(NovelTagsTable)
+    .where(eq(NovelTagsTable.id, id))
+    .returning({ id: NovelTagsTable.id });
+  return deleted.length > 0;
+}
+
+export async function listNovelTagIds(db: DB, novelId: number) {
+  const rows = await db
+    .select({ tagId: NovelTagLinksTable.tagId })
+    .from(NovelTagLinksTable)
+    .where(eq(NovelTagLinksTable.novelId, novelId));
+  return rows.map((row) => row.tagId);
+}
+
+export async function setNovelTags(db: DB, novelId: number, tagIds: number[]) {
+  await db
+    .delete(NovelTagLinksTable)
+    .where(eq(NovelTagLinksTable.novelId, novelId));
+  if (tagIds.length === 0) return;
+  await db
+    .insert(NovelTagLinksTable)
+    .values(tagIds.map((tagId) => ({ novelId, tagId })))
+    .onConflictDoNothing();
+}
+
+// ==================== the Admin's reading report ====================
+
+export async function readNovelStats(db: DB, days: number) {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const sinceDay = since.toISOString().slice(0, 10);
+  const inWindow = and(
+    gte(PageViewsTable.createdAt, since),
+    sql`${PageViewsTable.novelId} is not null`,
+  );
+
+  const [
+    summaryRows,
+    dailyViews,
+    topNovelRows,
+    topChapterRows,
+    readingByNovel,
+    readingSummary,
+  ] = await Promise.all([
+    db
+      .select({
+        views: count(),
+        visitors: sql<number>`count(distinct ${PageViewsTable.visitorId})`,
+      })
+      .from(PageViewsTable)
+      .where(inWindow),
+    db
+      .select({
+        day: sql<number>`cast(${PageViewsTable.createdAt} / 86400 as integer)`,
+        views: count(),
+      })
+      .from(PageViewsTable)
+      .where(inWindow)
+      .groupBy(sql`cast(${PageViewsTable.createdAt} / 86400 as integer)`)
+      .orderBy(sql`cast(${PageViewsTable.createdAt} / 86400 as integer)`),
+    db
+      .select({
+        id: NovelsTable.id,
+        title: NovelsTable.title,
+        views: count(),
+      })
+      .from(PageViewsTable)
+      .innerJoin(NovelsTable, eq(NovelsTable.id, PageViewsTable.novelId))
+      .where(inWindow)
+      .groupBy(NovelsTable.id, NovelsTable.title)
+      .orderBy(desc(count()))
+      .limit(10),
+    db
+      .select({
+        novelId: PageViewsTable.novelId,
+        novelTitle: NovelsTable.title,
+        chapterOrder: PageViewsTable.novelChapter,
+        views: count(),
+      })
+      .from(PageViewsTable)
+      .innerJoin(NovelsTable, eq(NovelsTable.id, PageViewsTable.novelId))
+      .where(and(inWindow, sql`${PageViewsTable.novelChapter} is not null`))
+      .groupBy(
+        PageViewsTable.novelId,
+        NovelsTable.title,
+        PageViewsTable.novelChapter,
+      )
+      .orderBy(desc(count()))
+      .limit(10),
+    db
+      .select({
+        novelId: NovelReadingDailyTable.novelId,
+        seconds: sql<number>`coalesce(sum(${NovelReadingDailyTable.seconds}), 0)`,
+      })
+      .from(NovelReadingDailyTable)
+      .where(gte(NovelReadingDailyTable.day, sinceDay))
+      .groupBy(NovelReadingDailyTable.novelId),
+    db
+      .select({
+        seconds: sql<number>`coalesce(sum(${NovelReadingDailyTable.seconds}), 0)`,
+        words: sql<number>`coalesce(sum(${NovelReadingDailyTable.words}), 0)`,
+      })
+      .from(NovelReadingDailyTable)
+      .where(gte(NovelReadingDailyTable.day, sinceDay)),
+  ]);
+
+  const secondsByNovel = new Map(
+    readingByNovel.map((row) => [row.novelId, Number(row.seconds)]),
+  );
+  const viewsByDay = new Map(
+    dailyViews.map((row) => [Number(row.day), row.views]),
+  );
+  const firstDay = Math.floor(since.getTime() / 86_400_000);
+  const lastDay = Math.floor(Date.now() / 86_400_000);
+  const daily = Array.from(
+    { length: lastDay - firstDay + 1 },
+    (_, index) => firstDay + index,
+  ).map((day) => ({
+    day: day * 86_400_000,
+    views: viewsByDay.get(day) ?? 0,
+    seconds: 0,
+  }));
+
+  const summary = summaryRows[0] ?? { views: 0, visitors: 0 };
+  const reading = readingSummary[0] ?? { seconds: 0, words: 0 };
+
+  return {
+    days,
+    summary: {
+      views: summary.views,
+      visitors: Number(summary.visitors),
+      seconds: Number(reading.seconds),
+      words: Number(reading.words),
+    },
+    daily,
+    topNovels: topNovelRows.map((row) => ({
+      ...row,
+      seconds: secondsByNovel.get(row.id) ?? 0,
+    })),
+    topChapters: topChapterRows.flatMap((row) =>
+      row.novelId !== null && row.chapterOrder !== null
+        ? [
+            {
+              novelId: row.novelId,
+              novelTitle: row.novelTitle,
+              chapterOrder: row.chapterOrder,
+              views: row.views,
+            },
+          ]
+        : [],
+    ),
+  };
 }

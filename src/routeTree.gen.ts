@@ -13,11 +13,14 @@ import { Route as PublicRouteRouteImport } from './routes/_public/route'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as AtomDotxmlRouteImport } from './routes/atom[.]xml'
 import { Route as FeedDotjsonRouteImport } from './routes/feed[.]json'
+import { Route as NovelBackupRouteImport } from './routes/novel-backup'
+import { Route as NovelExportRouteImport } from './routes/novel-export'
 import { Route as NovelFilesRouteImport } from './routes/novel-files'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as RssDotxmlRouteImport } from './routes/rss[.]xml'
 import { Route as SiteDotwebmanifestRouteImport } from './routes/site[.]webmanifest'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as SwDotjsRouteImport } from './routes/sw[.]js'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as PublicSplatRouteImport } from './routes/_public/$'
 import { Route as PublicAuthRouteRouteImport } from './routes/_public/_auth/route'
@@ -61,6 +64,10 @@ import { Route as AdminAccessApiKeysRouteImport } from './routes/admin/access/ap
 import { Route as AdminFriendLinksIndexRouteImport } from './routes/admin/friend-links/index'
 import { Route as AdminMediaIndexRouteImport } from './routes/admin/media/index'
 import { Route as AdminNovelsIndexRouteImport } from './routes/admin/novels/index'
+import { Route as AdminNovelsIdRouteImport } from './routes/admin/novels/$id'
+import { Route as AdminNovelsNotesRouteImport } from './routes/admin/novels/notes'
+import { Route as AdminNovelsStatsRouteImport } from './routes/admin/novels/stats'
+import { Route as AdminNovelsTagsRouteImport } from './routes/admin/novels/tags'
 import { Route as AdminPostsIndexRouteImport } from './routes/admin/posts/index'
 import { Route as AdminSettingsIndexRouteImport } from './routes/admin/settings/index'
 import { Route as AdminSettingsMaintenanceRouteImport } from './routes/admin/settings/maintenance'
@@ -93,6 +100,16 @@ const FeedDotjsonRoute = FeedDotjsonRouteImport.update({
   path: '/feed.json',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NovelBackupRoute = NovelBackupRouteImport.update({
+  id: '/novel-backup',
+  path: '/novel-backup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NovelExportRoute = NovelExportRouteImport.update({
+  id: '/novel-export',
+  path: '/novel-export',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NovelFilesRoute = NovelFilesRouteImport.update({
   id: '/novel-files',
   path: '/novel-files',
@@ -116,6 +133,11 @@ const SiteDotwebmanifestRoute = SiteDotwebmanifestRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SwDotjsRoute = SwDotjsRouteImport.update({
+  id: '/sw.js',
+  path: '/sw.js',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PublicIndexRoute = PublicIndexRouteImport.update({
@@ -333,6 +355,26 @@ const AdminNovelsIndexRoute = AdminNovelsIndexRouteImport.update({
   path: '/novels/',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminNovelsIdRoute = AdminNovelsIdRouteImport.update({
+  id: '/novels/$id',
+  path: '/novels/$id',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminNovelsNotesRoute = AdminNovelsNotesRouteImport.update({
+  id: '/novels/notes',
+  path: '/novels/notes',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminNovelsStatsRoute = AdminNovelsStatsRouteImport.update({
+  id: '/novels/stats',
+  path: '/novels/stats',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminNovelsTagsRoute = AdminNovelsTagsRouteImport.update({
+  id: '/novels/tags',
+  path: '/novels/tags',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminPostsIndexRoute = AdminPostsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -402,11 +444,14 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteRouteWithChildren
   '/atom.xml': typeof AtomDotxmlRoute
   '/feed.json': typeof FeedDotjsonRoute
+  '/novel-backup': typeof NovelBackupRoute
+  '/novel-export': typeof NovelExportRoute
   '/novel-files': typeof NovelFilesRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/site.webmanifest': typeof SiteDotwebmanifestRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/sw.js': typeof SwDotjsRoute
   '/admin/access': typeof AdminAccessRouteRouteWithChildren
   '/admin/posts': typeof AdminPostsRouteRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
@@ -441,6 +486,10 @@ export interface FileRoutesByFullPath {
   '/post/$slug': typeof PublicPostSlugRoute
   '/admin/access/agent-skill': typeof AdminAccessAgentSkillRoute
   '/admin/access/api-keys': typeof AdminAccessApiKeysRoute
+  '/admin/novels/$id': typeof AdminNovelsIdRoute
+  '/admin/novels/notes': typeof AdminNovelsNotesRoute
+  '/admin/novels/stats': typeof AdminNovelsStatsRoute
+  '/admin/novels/tags': typeof AdminNovelsTagsRoute
   '/admin/settings/maintenance': typeof AdminSettingsMaintenanceRoute
   '/admin/settings/notifications': typeof AdminSettingsNotificationsRoute
   '/admin/settings/site': typeof AdminSettingsSiteRoute
@@ -463,11 +512,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/atom.xml': typeof AtomDotxmlRoute
   '/feed.json': typeof FeedDotjsonRoute
+  '/novel-backup': typeof NovelBackupRoute
+  '/novel-export': typeof NovelExportRoute
   '/novel-files': typeof NovelFilesRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/site.webmanifest': typeof SiteDotwebmanifestRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/sw.js': typeof SwDotjsRoute
   '/': typeof PublicIndexRoute
   '/$': typeof PublicSplatRoute
   '/friend-links': typeof PublicFriendLinksRoute
@@ -499,6 +551,10 @@ export interface FileRoutesByTo {
   '/post/$slug': typeof PublicPostSlugRoute
   '/admin/access/agent-skill': typeof AdminAccessAgentSkillRoute
   '/admin/access/api-keys': typeof AdminAccessApiKeysRoute
+  '/admin/novels/$id': typeof AdminNovelsIdRoute
+  '/admin/novels/notes': typeof AdminNovelsNotesRoute
+  '/admin/novels/stats': typeof AdminNovelsStatsRoute
+  '/admin/novels/tags': typeof AdminNovelsTagsRoute
   '/admin/settings/maintenance': typeof AdminSettingsMaintenanceRoute
   '/admin/settings/notifications': typeof AdminSettingsNotificationsRoute
   '/admin/settings/site': typeof AdminSettingsSiteRoute
@@ -523,11 +579,14 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteRouteWithChildren
   '/atom.xml': typeof AtomDotxmlRoute
   '/feed.json': typeof FeedDotjsonRoute
+  '/novel-backup': typeof NovelBackupRoute
+  '/novel-export': typeof NovelExportRoute
   '/novel-files': typeof NovelFilesRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/site.webmanifest': typeof SiteDotwebmanifestRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/sw.js': typeof SwDotjsRoute
   '/_public/_auth': typeof PublicAuthRouteRouteWithChildren
   '/_public/_user': typeof PublicUserRouteRouteWithChildren
   '/admin/access': typeof AdminAccessRouteRouteWithChildren
@@ -565,6 +624,10 @@ export interface FileRoutesById {
   '/_public/post/$slug': typeof PublicPostSlugRoute
   '/admin/access/agent-skill': typeof AdminAccessAgentSkillRoute
   '/admin/access/api-keys': typeof AdminAccessApiKeysRoute
+  '/admin/novels/$id': typeof AdminNovelsIdRoute
+  '/admin/novels/notes': typeof AdminNovelsNotesRoute
+  '/admin/novels/stats': typeof AdminNovelsStatsRoute
+  '/admin/novels/tags': typeof AdminNovelsTagsRoute
   '/admin/settings/maintenance': typeof AdminSettingsMaintenanceRoute
   '/admin/settings/notifications': typeof AdminSettingsNotificationsRoute
   '/admin/settings/site': typeof AdminSettingsSiteRoute
@@ -591,11 +654,14 @@ export interface FileRouteTypes {
     | '/admin'
     | '/atom.xml'
     | '/feed.json'
+    | '/novel-backup'
+    | '/novel-export'
     | '/novel-files'
     | '/robots.txt'
     | '/rss.xml'
     | '/site.webmanifest'
     | '/sitemap.xml'
+    | '/sw.js'
     | '/admin/access'
     | '/admin/posts'
     | '/admin/settings'
@@ -630,6 +696,10 @@ export interface FileRouteTypes {
     | '/post/$slug'
     | '/admin/access/agent-skill'
     | '/admin/access/api-keys'
+    | '/admin/novels/$id'
+    | '/admin/novels/notes'
+    | '/admin/novels/stats'
+    | '/admin/novels/tags'
     | '/admin/settings/maintenance'
     | '/admin/settings/notifications'
     | '/admin/settings/site'
@@ -652,11 +722,14 @@ export interface FileRouteTypes {
   to:
     | '/atom.xml'
     | '/feed.json'
+    | '/novel-backup'
+    | '/novel-export'
     | '/novel-files'
     | '/robots.txt'
     | '/rss.xml'
     | '/site.webmanifest'
     | '/sitemap.xml'
+    | '/sw.js'
     | '/'
     | '/$'
     | '/friend-links'
@@ -688,6 +761,10 @@ export interface FileRouteTypes {
     | '/post/$slug'
     | '/admin/access/agent-skill'
     | '/admin/access/api-keys'
+    | '/admin/novels/$id'
+    | '/admin/novels/notes'
+    | '/admin/novels/stats'
+    | '/admin/novels/tags'
     | '/admin/settings/maintenance'
     | '/admin/settings/notifications'
     | '/admin/settings/site'
@@ -711,11 +788,14 @@ export interface FileRouteTypes {
     | '/admin'
     | '/atom.xml'
     | '/feed.json'
+    | '/novel-backup'
+    | '/novel-export'
     | '/novel-files'
     | '/robots.txt'
     | '/rss.xml'
     | '/site.webmanifest'
     | '/sitemap.xml'
+    | '/sw.js'
     | '/_public/_auth'
     | '/_public/_user'
     | '/admin/access'
@@ -753,6 +833,10 @@ export interface FileRouteTypes {
     | '/_public/post/$slug'
     | '/admin/access/agent-skill'
     | '/admin/access/api-keys'
+    | '/admin/novels/$id'
+    | '/admin/novels/notes'
+    | '/admin/novels/stats'
+    | '/admin/novels/tags'
     | '/admin/settings/maintenance'
     | '/admin/settings/notifications'
     | '/admin/settings/site'
@@ -778,11 +862,14 @@ export interface RootRouteChildren {
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   AtomDotxmlRoute: typeof AtomDotxmlRoute
   FeedDotjsonRoute: typeof FeedDotjsonRoute
+  NovelBackupRoute: typeof NovelBackupRoute
+  NovelExportRoute: typeof NovelExportRoute
   NovelFilesRoute: typeof NovelFilesRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   RssDotxmlRoute: typeof RssDotxmlRoute
   SiteDotwebmanifestRoute: typeof SiteDotwebmanifestRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  SwDotjsRoute: typeof SwDotjsRoute
   ApiSplatRoute: typeof ApiSplatRoute
   ApiAuthRoute: typeof ApiAuthRouteWithChildren
   ApiTrackRoute: typeof ApiTrackRoute
@@ -822,6 +909,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FeedDotjsonRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/novel-backup': {
+      id: '/novel-backup'
+      path: '/novel-backup'
+      fullPath: '/novel-backup'
+      preLoaderRoute: typeof NovelBackupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/novel-export': {
+      id: '/novel-export'
+      path: '/novel-export'
+      fullPath: '/novel-export'
+      preLoaderRoute: typeof NovelExportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/novel-files': {
       id: '/novel-files'
       path: '/novel-files'
@@ -855,6 +956,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sw.js': {
+      id: '/sw.js'
+      path: '/sw.js'
+      fullPath: '/sw.js'
+      preLoaderRoute: typeof SwDotjsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_public/': {
@@ -1158,6 +1266,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminNovelsIndexRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/novels/$id': {
+      id: '/admin/novels/$id'
+      path: '/novels/$id'
+      fullPath: '/admin/novels/$id'
+      preLoaderRoute: typeof AdminNovelsIdRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/novels/notes': {
+      id: '/admin/novels/notes'
+      path: '/novels/notes'
+      fullPath: '/admin/novels/notes'
+      preLoaderRoute: typeof AdminNovelsNotesRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/novels/stats': {
+      id: '/admin/novels/stats'
+      path: '/novels/stats'
+      fullPath: '/admin/novels/stats'
+      preLoaderRoute: typeof AdminNovelsStatsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/novels/tags': {
+      id: '/admin/novels/tags'
+      path: '/novels/tags'
+      fullPath: '/admin/novels/tags'
+      preLoaderRoute: typeof AdminNovelsTagsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/posts/': {
       id: '/admin/posts/'
       path: '/'
@@ -1403,6 +1539,10 @@ interface AdminRouteRouteChildren {
   AdminPersonalizeRoute: typeof AdminPersonalizeRoute
   AdminTaxonomyRoute: typeof AdminTaxonomyRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminNovelsIdRoute: typeof AdminNovelsIdRoute
+  AdminNovelsNotesRoute: typeof AdminNovelsNotesRoute
+  AdminNovelsStatsRoute: typeof AdminNovelsStatsRoute
+  AdminNovelsTagsRoute: typeof AdminNovelsTagsRoute
   AdminFriendLinksIndexRoute: typeof AdminFriendLinksIndexRoute
   AdminMediaIndexRoute: typeof AdminMediaIndexRoute
   AdminNovelsIndexRoute: typeof AdminNovelsIndexRoute
@@ -1419,6 +1559,10 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminPersonalizeRoute: AdminPersonalizeRoute,
   AdminTaxonomyRoute: AdminTaxonomyRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminNovelsIdRoute: AdminNovelsIdRoute,
+  AdminNovelsNotesRoute: AdminNovelsNotesRoute,
+  AdminNovelsStatsRoute: AdminNovelsStatsRoute,
+  AdminNovelsTagsRoute: AdminNovelsTagsRoute,
   AdminFriendLinksIndexRoute: AdminFriendLinksIndexRoute,
   AdminMediaIndexRoute: AdminMediaIndexRoute,
   AdminNovelsIndexRoute: AdminNovelsIndexRoute,
@@ -1444,11 +1588,14 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRouteRoute: AdminRouteRouteWithChildren,
   AtomDotxmlRoute: AtomDotxmlRoute,
   FeedDotjsonRoute: FeedDotjsonRoute,
+  NovelBackupRoute: NovelBackupRoute,
+  NovelExportRoute: NovelExportRoute,
   NovelFilesRoute: NovelFilesRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   RssDotxmlRoute: RssDotxmlRoute,
   SiteDotwebmanifestRoute: SiteDotwebmanifestRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  SwDotjsRoute: SwDotjsRoute,
   ApiSplatRoute: ApiSplatRoute,
   ApiAuthRoute: ApiAuthRouteWithChildren,
   ApiTrackRoute: ApiTrackRoute,
