@@ -185,6 +185,25 @@ export function NovelReader({
     };
   }, [signedIn, novel.id, chapter.order]);
 
+  // A touch selection updates the Selection without a mouseup, so follow
+  // selectionchange too; the timer lets the reader settle the handles first.
+  useEffect(() => {
+    if (!signedIn) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onSelectionChange = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        const offsets = selectionOffsets(contentRef.current);
+        if (offsets) setDraft(offsets);
+      }, 300);
+    };
+    document.addEventListener("selectionchange", onSelectionChange);
+    return () => {
+      if (timer) clearTimeout(timer);
+      document.removeEventListener("selectionchange", onSelectionChange);
+    };
+  }, [signedIn]);
+
   const invalidateNotes = () => {
     void queryClient.invalidateQueries({
       queryKey: [...NOVELS_QUERY_KEY, "my-notes", novel.id, chapter.order],

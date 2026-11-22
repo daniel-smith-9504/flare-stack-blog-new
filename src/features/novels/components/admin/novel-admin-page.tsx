@@ -1,17 +1,35 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { BookOpen, Globe2, RefreshCw, Trash2, Upload } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import {
+  BookOpen,
+  Globe2,
+  Image as ImageIcon,
+  RefreshCw,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import { lazy, Suspense, useState, type FormEvent } from "react";
 import { AdminPage } from "@/components/admin/admin-page";
 import { Button, buttonClass } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { NovelCover } from "@/features/novels/components/novel-cover";
-import type { GutenbergBook } from "@/features/novels/novels.schema";
+import type {
+  AdminNovel,
+  GutenbergBook,
+} from "@/features/novels/novels.schema";
 import { NOVELS_QUERY_KEY, adminNovelsQuery } from "@/features/novels/queries";
 import { orpcClient } from "@/lib/orpc";
 import { toast } from "@/lib/toast";
 import { m } from "@/paraglide/messages";
+
+// The media library is only reachable from this Admin page, so keep its
+// bundle out of the first load.
+const MediaPicker = lazy(() =>
+  import("@/features/media/components/media-library/components").then(
+    (mod) => ({ default: mod.MediaPicker }),
+  ),
+);
 
 const STATUS_LABELS = {
   pending: m.admin_novels_status_pending,
@@ -32,6 +50,8 @@ export function NovelAdminPage() {
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<Array<GutenbergBook> | null>(null);
   const [importingId, setImportingId] = useState<number | null>(null);
+  const [coverTarget, setCoverTarget] = useState<AdminNovel | null>(null);
+  const [savingCoverId, setSavingCoverId] = useState<number | null>(null);
 
   const refresh = () => {
     void queryClient.invalidateQueries({
@@ -124,6 +144,19 @@ export function NovelAdminPage() {
       refresh();
     } catch {
       toast.error(m.admin_novels_upload_failed());
+    }
+  };
+
+  const saveCover = async (novel: AdminNovel, coverUrl: string) => {
+    setSavingCoverId(novel.id);
+    try {
+      await orpcClient.novels.admin.update({ id: novel.id, coverUrl });
+      toast.success(m.admin_novels_cover_saved());
+      refresh();
+    } catch {
+      toast.error(m.admin_novels_cover_failed());
+    } finally {
+      setSavingCoverId(null);
     }
   };
 
@@ -256,6 +289,16 @@ export function NovelAdminPage() {
                         {novel.error}
                       </p>
                     ) : null}
+                    <Button
+                      variant="text"
+                      size="sm"
+                      className="mt-0.5"
+                      icon={<ImageIcon size={13} />}
+                      loading={savingCoverId === novel.id}
+                      onClick={() => setCoverTarget(novel)}
+                    >
+                      {m.admin_novels_cover()}
+                    </Button>
                   </div>
                   {novel.status === "ready" ? (
                     <Link
@@ -291,6 +334,20 @@ export function NovelAdminPage() {
           )}
         </section>
       </div>
+      {coverTarget ? (
+        <Suspense fallback={null}>
+          <MediaPicker
+            open
+            title={m.admin_novels_cover()}
+            onClose={() => setCoverTarget(null)}
+            onSelect={(asset) => {
+              const novel = coverTarget;
+              setCoverTarget(null);
+              void saveCover(novel, asset.url);
+            }}
+          />
+        </Suspense>
+      ) : null}
     </AdminPage>
   );
 }
