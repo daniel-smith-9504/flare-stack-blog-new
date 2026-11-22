@@ -3,8 +3,10 @@ import { lazy, Suspense, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { ThemedPageHeading } from "@/features/theme/components/themed-page-heading";
 import { Switch } from "@/components/ui/switch";
+import type { useChangePassword } from "../hooks/use-change-password";
 import type { useProfileForm } from "../hooks/use-profile-form";
 import type { useNotificationToggle } from "../hooks/use-notification-toggle";
 import { StatusText } from "@/components/ui/status-text";
@@ -28,6 +30,7 @@ interface ProfilePageProps {
     role?: string | null;
   };
   profileForm: ReturnType<typeof useProfileForm>;
+  passwordForm: ReturnType<typeof useChangePassword>;
   notification: ReturnType<typeof useNotificationToggle>;
   logout: () => Promise<void>;
 }
@@ -35,6 +38,7 @@ interface ProfilePageProps {
 export function ProfilePage({
   user,
   profileForm,
+  passwordForm,
   notification,
   logout,
 }: ProfilePageProps) {
@@ -170,6 +174,64 @@ export function ProfilePage({
               }
             />
           )}
+        </div>
+      </section>
+      <section className="account-setting">
+        <div className="account-password">
+          <h2>{m.password_change_title()}</h2>
+          <p>{m.password_change_desc()}</p>
+          <form
+            className="account-password-form"
+            onSubmit={passwordForm.handleSubmit}
+            noValidate
+          >
+            <fieldset disabled={passwordForm.isSubmitting}>
+              <FormField
+                label={m.password_change_current()}
+                error={passwordForm.errors.currentPassword?.message}
+                required
+              >
+                <PasswordInput
+                  {...passwordForm.register("currentPassword")}
+                  autoComplete="current-password"
+                />
+              </FormField>
+              <FormField
+                label={m.password_change_new()}
+                error={passwordForm.errors.newPassword?.message}
+                required
+              >
+                <PasswordInput
+                  {...passwordForm.register("newPassword")}
+                  autoComplete="new-password"
+                />
+              </FormField>
+              <FormField
+                label={m.password_change_confirm()}
+                error={passwordForm.errors.confirmPassword?.message}
+                required
+              >
+                <PasswordInput
+                  {...passwordForm.register("confirmPassword")}
+                  autoComplete="new-password"
+                />
+              </FormField>
+              <div className="account-save">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  loading={passwordForm.isSubmitting}
+                >
+                  {m.password_change_submit()}
+                </Button>
+                {passwordForm.feedback && (
+                  <StatusText error={passwordForm.feedback.error}>
+                    {passwordForm.feedback.message}
+                  </StatusText>
+                )}
+              </div>
+            </fieldset>
+          </form>
         </div>
       </section>
       <footer className="account-footer">

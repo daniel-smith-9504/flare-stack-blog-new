@@ -132,3 +132,21 @@ export function refreshSession(queryClient: QueryClient) {
   announceSessionChange("updateUser");
   return queryClient.invalidateQueries({ queryKey: AUTH_KEYS.session });
 }
+
+/**
+ * After the signed-in User changed their password: the prompt ends at once.
+ * The session's cookie cache, written before the change, may still carry the
+ * old answer for up to five minutes, so the session is not looked up again
+ * here; the next lookup after the cache expires reads the database.
+ */
+export function markPasswordChanged(queryClient: QueryClient) {
+  queryClient.setQueryData<Session | null>(AUTH_KEYS.session, (previous) =>
+    previous
+      ? {
+          ...previous,
+          user: { ...previous.user, mustChangePassword: false },
+        }
+      : previous,
+  );
+  announceSessionChange("updateUser");
+}

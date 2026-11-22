@@ -8,11 +8,13 @@ const TURNSTILE_PROTECTED_PATHS = new Set([
   "/api/auth/email-otp/send-verification-otp",
 ]);
 
-// Entering a code gets the same per-IP budget as sending one, but no
-// Turnstile: the human check already happened when the code was sent.
+// Entering a code, or a password, gets a tighter hourly budget than the other
+// auth POSTs, and no Turnstile: the human check already happened when the
+// code was sent, and a password form cannot wait for one.
 const SIGN_IN_CODE_PATHS = new Set([
   ...TURNSTILE_PROTECTED_PATHS,
   "/api/auth/sign-in/email-otp",
+  "/api/auth/sign-in/email",
 ]);
 
 export async function handleAuthRequest(

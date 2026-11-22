@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ProfilePage as ProfileView } from "@/features/auth/components/profile-page";
 import {
+  useChangePassword,
   useLogout,
   useNotificationToggle,
   useProfileForm,
@@ -31,6 +32,7 @@ function ProfilePage() {
   const user = session?.user;
 
   const profileForm = useProfileForm({ user });
+  const passwordForm = useChangePassword();
   const notification = useNotificationToggle(user?.id);
   const { logout } = useLogout({
     onSuccess: () => {
@@ -44,6 +46,7 @@ function ProfilePage() {
     <ProfileView
       user={user}
       profileForm={profileForm}
+      passwordForm={passwordForm}
       notification={notification}
       logout={logout}
     />

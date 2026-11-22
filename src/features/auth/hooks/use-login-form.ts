@@ -9,6 +9,7 @@ import { resetAuthBoundQueries } from "@/features/auth/queries";
 import { usePreviousLocation } from "@/hooks/use-previous-location";
 import { getAuthClient } from "@/lib/auth/auth-client";
 import {
+  getPasswordAuthErrorMessage,
   getRetryAfterMs,
   getSignInCodeAuthErrorMessage,
   isSignInCodeSpentError,
@@ -23,6 +24,7 @@ import { normalizeRedirectUrl } from "./normalize-redirect-url";
 import { useCooldown } from "./use-cooldown";
 
 export type LoginStep = "email" | "code" | "name";
+export type LoginMethod = "code" | "password";
 
 const createEmailSchema = () =>
   z.object({
@@ -34,19 +36,32 @@ const createCodeSchema = () =>
     code: z.string().refine(isSignInCode, m.login_validation_code()),
   });
 
+const createPasswordSchema = () =>
+  z.object({
+    email: z.email(m.login_validation_invalid_email()),
+    password: z.string().min(1, m.login_validation_password()),
+  });
+
 type EmailSchema = z.infer<ReturnType<typeof createEmailSchema>>;
 type CodeSchema = z.infer<ReturnType<typeof createCodeSchema>>;
+type PasswordSchema = z.infer<ReturnType<typeof createPasswordSchema>>;
 
 interface UseLoginFormOptions {
   turnstileToken: string | null;
   resetTurnstile: () => void;
   redirectTo?: string;
+  /** A site without email delivery still offers password sign-in. */
+  emailCodeEnabled: boolean;
 }
 
 export function useLoginForm(options: UseLoginFormOptions) {
-  const { turnstileToken, resetTurnstile, redirectTo } = options;
+  const { turnstileToken, resetTurnstile, redirectTo, emailCodeEnabled } =
+    options;
 
   const [step, setStep] = useState<LoginStep>("email");
+  const [method, setMethod] = useState<LoginMethod>(
+    emailCodeEnabled ? "code" : "password",
+  );
   const [email, setEmail] = useState("");
   const [signedIn, setSignedIn] = useState(false);
   const [isResending, setIsResending] = useState(false);
@@ -61,6 +76,9 @@ export function useLoginForm(options: UseLoginFormOptions) {
   });
   const codeForm = useForm<CodeSchema>({
     resolver: standardSchemaResolver(createCodeSchema()),
+  });
+  const passwordForm = useForm<PasswordSchema>({
+    resolver: standardSchemaResolver(createPasswordSchema()),
   });
 
   const performRedirect = (
@@ -166,6 +184,36 @@ export function useLoginForm(options: UseLoginFormOptions) {
     finish();
   };
 
+  const onSubmitPassword = async (data: PasswordSchema) => {
+    setError(null);
+    try {
+      const { data: result, error: signInError } =
+        await getAuthClient().signIn.email({
+          email: data.email,
+          password: data.password,
+        });
+      if (signInError) {
+        setError(
+          getPasswordAuthErrorMessage(signInError) ??
+            m.auth_error_default_desc(),
+        );
+        return;
+      }
+      // Signed in from here on, even before the name step finishes.
+      resetAuthBoundQueries(queryClient, "signed-in");
+      setEmail(data.email);
+      if (!result?.user.name.trim()) {
+        setStep("name");
+        return;
+      }
+    } catch {
+      setError(m.auth_error_default_desc());
+      return;
+    }
+
+    finish();
+  };
+
   const resend = async () => {
     if (isResending || cooldown.secondsLeft > 0) return;
     setIsResending(true);
@@ -188,6 +236,11 @@ export function useLoginForm(options: UseLoginFormOptions) {
 
   return {
     step,
+    method,
+    selectMethod: (next: LoginMethod) => {
+      setError(null);
+      setMethod(next);
+    },
     email,
     error,
     signedIn,
@@ -201,12 +254,20 @@ export function useLoginForm(options: UseLoginFormOptions) {
       register: codeForm.register,
       errors: codeForm.formState.errors,
     },
+    passwordForm: {
+      register: passwordForm.register,
+      errors: passwordForm.formState.errors,
+    },
     isSubmitting:
-      emailForm.formState.isSubmitting || codeForm.formState.isSubmitting,
+      emailForm.formState.isSubmitting ||
+      codeForm.formState.isSubmitting ||
+      passwordForm.formState.isSubmitting,
     handleSubmit:
-      step === "email"
-        ? emailForm.handleSubmit(onSubmitEmail)
-        : codeForm.handleSubmit(onSubmitCode),
+      step === "code"
+        ? codeForm.handleSubmit(onSubmitCode)
+        : method === "password"
+          ? passwordForm.handleSubmit(onSubmitPassword)
+          : emailForm.handleSubmit(onSubmitEmail),
     resend,
     changeEmail,
     finish,

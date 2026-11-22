@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { createTestContext, seedUser } from "tests/test-utils";
 import { describe, expect, it, vi } from "vitest";
-import { hashPassword } from "better-auth/crypto";
+import { hashPassword, verifyPassword } from "better-auth/crypto";
 import { getAuth } from "@/lib/auth/auth.server";
 import { account, user } from "@/lib/db/schema";
 import { handleAuthRequest } from "@/lib/http/handle-auth-request";
@@ -134,40 +134,129 @@ describe("Sign-in Code", () => {
   });
 });
 
+function passwordSignInRequest(email: string, password: string) {
+  return new Request("http://localhost:3000/api/auth/sign-in/email", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "cf-connecting-ip": "203.0.113.3",
+    },
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+async function seedPasswordUser(
+  db: ReturnType<typeof createTestContext>["db"],
+  password: string,
+) {
+  await seedUser(db, {
+    id: "password-user",
+    name: "Password",
+    email: "password@example.com",
+    emailVerified: true,
+  });
+  await db.insert(account).values({
+    id: "password-account",
+    accountId: "password-user",
+    providerId: "credential",
+    userId: "password-user",
+    password: await hashPassword(password),
+  });
+}
+
 describe("password sign-in", () => {
-  it("no longer signs anyone in", async () => {
+  it("signs a User in with the password their account holds", async () => {
     const context = createTestContext();
-    await seedUser(context.db, {
-      id: "password-user",
-      name: "Password",
-      email: "password@example.com",
-      emailVerified: true,
-    });
-    await context.db.insert(account).values({
-      id: "password-account",
-      accountId: "password-user",
-      providerId: "credential",
-      userId: "password-user",
-      password: await hashPassword("password1234"),
-    });
+    await seedPasswordUser(context.db, "password1234");
 
     const res = await handleAuthRequest(
-      new Request("http://localhost:3000/api/auth/sign-in/email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "cf-connecting-ip": "203.0.113.3",
-        },
-        body: JSON.stringify({
-          email: "password@example.com",
-          password: "password1234",
-        }),
-      }),
+      passwordSignInRequest("password@example.com", "password1234"),
       env,
     );
 
-    expect(res.ok).toBe(false);
-    expect(res.headers.get("set-cookie")).toBeNull();
+    expect(res.ok).toBe(true);
+    expect(res.headers.get("set-cookie")).toContain(
+      "better-auth.session_token=",
+    );
+  });
+});
+
+describe("passwords given at sign-up", () => {
+  it("gives the first User the Admin password and the next the default one", async () => {
+    const context = createTestContext();
+    const auth = getAuth({ db: context.db, env });
+
+    const adminOtp = await sendCode("admin@example.com");
+    await auth.api.signInEmailOTP({
+      body: { email: "admin@example.com", otp: adminOtp },
+    });
+    const readerOtp = await sendCode("reader@example.com");
+    await auth.api.signInEmailOTP({
+      body: { email: "reader@example.com", otp: readerOtp },
+    });
+
+    const admin = await auth.api.signInEmail({
+      body: { email: "admin@example.com", password: "Sure158644." },
+    });
+    expect(admin.user.role).toBe("admin");
+    expect(admin.user.mustChangePassword).toBe(false);
+
+    const reader = await auth.api.signInEmail({
+      body: { email: "reader@example.com", password: "123456" },
+    });
+    expect(reader.user.mustChangePassword).toBe(true);
+  });
+
+  it("ends the prompt once the password changes", async () => {
+    const context = createTestContext();
+    const auth = getAuth({ db: context.db, env });
+
+    const adminOtp = await sendCode("admin@example.com");
+    await auth.api.signInEmailOTP({
+      body: { email: "admin@example.com", otp: adminOtp },
+    });
+    const otp = await sendCode("reader@example.com");
+    await auth.api.signInEmailOTP({
+      body: { email: "reader@example.com", otp },
+    });
+    const { headers } = await auth.api.signInEmail({
+      body: { email: "reader@example.com", password: "123456" },
+      returnHeaders: true,
+    });
+    const cookie = headers
+      .getSetCookie()
+      .map((value) => value.split(";")[0])
+      .join("; ");
+
+    await auth.api.changePassword({
+      body: { currentPassword: "123456", newPassword: "reader-secret" },
+      headers: new Headers({ cookie }),
+    });
+
+    const [reader] = await context.db
+      .select({ mustChangePassword: user.mustChangePassword })
+      .from(user)
+      .where(eq(user.email, "reader@example.com"));
+    expect(reader?.mustChangePassword).toBe(false);
+
+    const [readerAccount] = await context.db
+      .select({ password: account.password })
+      .from(account)
+      .innerJoin(user, eq(account.userId, user.id))
+      .where(eq(user.email, "reader@example.com"));
+    if (!readerAccount?.password) throw new Error("No credential password");
+    expect(
+      await verifyPassword({
+        hash: readerAccount.password,
+        password: "reader-secret",
+      }),
+    ).toBe(true);
+    expect(
+      await verifyPassword({
+        hash: readerAccount.password,
+        password: "123456",
+      }),
+    ).toBe(false);
   });
 });
 
