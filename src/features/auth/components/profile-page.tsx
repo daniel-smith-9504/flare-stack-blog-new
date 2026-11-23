@@ -10,6 +10,7 @@ import type { useChangePassword } from "../hooks/use-change-password";
 import type { useProfileForm } from "../hooks/use-profile-form";
 import type { useNotificationToggle } from "../hooks/use-notification-toggle";
 import { StatusText } from "@/components/ui/status-text";
+import { ReadingHistorySection } from "@/features/reading-history/components/reading-history-section";
 import { m } from "@/paraglide/messages";
 import "./profile-page.css";
 
@@ -176,6 +177,7 @@ export function ProfilePage({
           )}
         </div>
       </section>
+      <ReadingHistorySection />
       <section className="account-setting">
         <div className="account-password">
           <h2>{m.password_change_title()}</h2>

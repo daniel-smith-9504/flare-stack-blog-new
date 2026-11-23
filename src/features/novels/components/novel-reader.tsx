@@ -35,6 +35,7 @@ import {
 import {
   NOVELS_QUERY_KEY,
   bookmarksQuery,
+  myMuteQuery,
   novelChapterQuery,
   novelProgressQuery,
   novelSettingsQuery,
@@ -50,6 +51,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
 import { orpcClient } from "@/lib/orpc";
+import { formatDate } from "@/lib/utils";
 import { m } from "@/paraglide/messages";
 
 const THEMES = {
@@ -133,6 +135,8 @@ export function NovelReader({
   const queryClient = useQueryClient();
   const { data: session } = useSession();
   const signedIn = Boolean(session);
+  const { data: mute } = useQuery(myMuteQuery(signedIn));
+  const muted = mute?.muted ?? false;
 
   const { data: progress } = useQuery(novelProgressQuery(novel.id, signedIn));
   const { data: savedSettings } = useQuery(novelSettingsQuery(signedIn));
@@ -1135,6 +1139,15 @@ export function NovelReader({
             maxLength={2000}
             className="mt-3 resize-none"
           />
+          {muted ? (
+            <p className="mt-2 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400">
+              {mute?.permanent
+                ? m.novels_muted_permanent()
+                : m.novels_muted_until({
+                    until: formatDate(mute?.until, { includeTime: true }),
+                  })}
+            </p>
+          ) : null}
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <Switch
               checked={draftPublic}
@@ -1149,6 +1162,7 @@ export function NovelReader({
                 variant="primary"
                 size="sm"
                 loading={createNote.isPending}
+                disabled={muted}
                 onClick={() =>
                   createNote.mutate({
                     note: draftNote,

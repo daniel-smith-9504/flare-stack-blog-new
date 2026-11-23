@@ -24,6 +24,10 @@ export const router = {
   posts: postsRouter,
   moments: momentsRouter,
   novels: novelsRouter,
+  readingHistory: lazy(
+    () => import("@/features/reading-history/server/router"),
+    { prefix: "/profile/reading" },
+  ),
   tags: tagsRouter,
   categories: categoriesRouter,
   comments: commentsRouter,

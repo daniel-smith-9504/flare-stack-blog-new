@@ -310,6 +310,32 @@ export const ModerateNoteOutputSchema = z.object({
   status: NovelNoteStatusSchema,
 });
 
+/** The signed-in reader's own mute, if a novel or account mute is active. */
+export const MyNovelMuteSchema = z.object({
+  muted: z.boolean(),
+  permanent: z.boolean(),
+  until: coercedDate.nullable(),
+  source: z.enum(["novel", "account"]).nullable(),
+});
+
+export const AdminNovelMuteSchema = z.object({
+  id: z.number().int(),
+  userId: z.string(),
+  userName: z.string(),
+  userImage: z.string().nullable(),
+  level: z.number().int(),
+  until: coercedDate.nullable(),
+  reason: z.string(),
+  createdAt: coercedDate,
+  active: z.boolean(),
+});
+
+export const AdminNovelMuteListSchema = z.array(AdminNovelMuteSchema);
+
+export const UnmuteNovelUserInputSchema = z.strictObject({
+  id: PathIdSchema,
+});
+
 // ==================== the Admin's view ====================
 
 export const AdminNovelSchema = NovelSummarySchema.extend({
@@ -498,6 +524,8 @@ export type AdminNovel = z.infer<typeof AdminNovelSchema>;
 export type AdminChapter = z.infer<typeof AdminChapterSchema>;
 export type AdminChapterContent = z.infer<typeof AdminChapterContentSchema>;
 export type AdminNote = z.infer<typeof AdminNoteSchema>;
+export type MyNovelMute = z.infer<typeof MyNovelMuteSchema>;
+export type AdminNovelMute = z.infer<typeof AdminNovelMuteSchema>;
 export type AdminNovelStats = z.infer<typeof AdminNovelStatsSchema>;
 export type GutenbergBook = z.infer<typeof GutenbergBookSchema>;
 export type SaveSettingsInput = z.infer<typeof SaveSettingsInputSchema>;

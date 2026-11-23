@@ -17,6 +17,7 @@ import {
   NovelProgressSchema,
   NovelSettingsSchema,
   NovelTagListSchema,
+  MyNovelMuteSchema,
   OwnNoteSchema,
   OwnNotesInputSchema,
   OwnNotesSchema,
@@ -164,6 +165,18 @@ const myNotes = authProcedure
   .handler(({ context, input }) =>
     NovelService.getOwnNotes(context, input.novelId, input.chapterOrder),
   );
+
+const myMute = authProcedure
+  .route({
+    method: "GET",
+    path: "/novels/mute",
+    summary: "Read your mute status",
+    description:
+      "Whether an account or novel mute currently stops you from posting highlights, and until when.",
+    tags: ["Novels"],
+  })
+  .output(MyNovelMuteSchema)
+  .handler(({ context }) => NovelService.getMyMute(context));
 
 const createNote = authProcedure
   .errors({
@@ -472,6 +485,7 @@ export default {
   chapter,
   publicNotes,
   myNotes,
+  myMute,
   createNote,
   updateNote,
   deleteNote,

@@ -941,6 +941,52 @@ export async function findActiveMute(db: DB, userId: string) {
     : null;
 }
 
+/** The account-wide mute an Admin sets on the user row, if any. */
+export async function findUserMutedAt(db: DB, userId: string) {
+  const [row] = await db
+    .select({ mutedAt: user.mutedAt })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+  return row?.mutedAt ?? null;
+}
+
+export async function listNovelMutes(db: DB) {
+  return db
+    .select({
+      id: NovelMutesTable.id,
+      userId: NovelMutesTable.userId,
+      userName: user.name,
+      userImage: user.image,
+      level: NovelMutesTable.level,
+      until: NovelMutesTable.until,
+      reason: NovelMutesTable.reason,
+      createdAt: NovelMutesTable.createdAt,
+    })
+    .from(NovelMutesTable)
+    .innerJoin(user, eq(user.id, NovelMutesTable.userId))
+    .orderBy(desc(NovelMutesTable.createdAt));
+}
+
+export async function findNovelMuteById(db: DB, id: number) {
+  const [row] = await db
+    .select({ id: NovelMutesTable.id, until: NovelMutesTable.until })
+    .from(NovelMutesTable)
+    .where(eq(NovelMutesTable.id, id))
+    .limit(1);
+  return row ?? null;
+}
+
+/** Ends a mute now, keeping the row so the next offence still escalates. */
+export async function endNovelMute(db: DB, id: number) {
+  const [row] = await db
+    .update(NovelMutesTable)
+    .set({ until: new Date() })
+    .where(eq(NovelMutesTable.id, id))
+    .returning({ id: NovelMutesTable.id });
+  return Boolean(row);
+}
+
 /** A mute steps 1 → 3 → 7 → 30 days and is permanent from the fifth. */
 export async function muteUser(db: DB, userId: string, reason: string) {
   const [row] = await db

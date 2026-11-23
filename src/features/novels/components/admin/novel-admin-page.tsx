@@ -12,6 +12,7 @@ import {
   Tags,
   Trash2,
   Upload,
+  UserX,
   BarChart3,
 } from "lucide-react";
 import { lazy, Suspense, useState, type FormEvent } from "react";
@@ -216,6 +217,13 @@ export function NovelAdminPage() {
           >
             <MessageSquareWarning size={15} />
             {m.admin_novel_notes_title()}
+          </Link>
+          <Link
+            to="/admin/novels/mutes"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-black/5 px-3 py-1.5 dark:bg-white/10"
+          >
+            <UserX size={15} />
+            {m.admin_novel_mutes_title()}
           </Link>
           <span className="flex-1" />
           <a

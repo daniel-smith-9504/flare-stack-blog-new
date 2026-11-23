@@ -4,6 +4,8 @@ import type {
   OwnNote,
   AdminChapter,
   AdminChapterContent,
+  MyNovelMute,
+  AdminNovelMute,
 } from "@/features/novels/novels.schema";
 import * as NovelRepo from "@/features/novels/data/novels.data";
 import {
@@ -171,6 +173,8 @@ export async function createNote(
     isPublic: boolean;
   },
 ): Promise<Result<OwnNote, NoteError>> {
+  if (await NovelRepo.findUserMutedAt(context.db, context.session.user.id))
+    return err({ reason: "MUTED" });
   if (await NovelRepo.findActiveMute(context.db, context.session.user.id))
     return err({ reason: "MUTED" });
   const chapter = await NovelRepo.findChapter(
@@ -226,6 +230,24 @@ export function deleteNote(
   id: number,
 ) {
   return NovelRepo.deleteNote(context.db, context.session.user.id, id);
+}
+
+/** Whether the reader may post a highlight: an account mute wins over one. */
+export async function getMyMute(
+  context: ReadContext & { session: Session },
+): Promise<MyNovelMute> {
+  const userId = context.session.user.id;
+  if (await NovelRepo.findUserMutedAt(context.db, userId))
+    return { muted: true, permanent: true, until: null, source: "account" };
+  const mute = await NovelRepo.findActiveMute(context.db, userId);
+  if (!mute)
+    return { muted: false, permanent: false, until: null, source: null };
+  return {
+    muted: true,
+    permanent: mute.permanent,
+    until: mute.until,
+    source: "novel",
+  };
 }
 
 export async function getSettings(
@@ -704,6 +726,25 @@ export async function restoreAdminNote(context: ReadContext, id: number) {
   const note = await NovelRepo.findNote(context.db, id);
   if (!note) return null;
   return NovelRepo.setNoteStatus(context.db, id, "visible");
+}
+
+export async function listAdminMutes(
+  context: ReadContext,
+): Promise<AdminNovelMute[]> {
+  const now = Date.now();
+  const rows = await NovelRepo.listNovelMutes(context.db);
+  return rows.map((row) => ({
+    ...row,
+    active: row.until === null || row.until.getTime() > now,
+  }));
+}
+
+/** Ends one mute by its row id; the escalation history stays. */
+export async function unmuteNovelReader(context: ReadContext, id: number) {
+  const mute = await NovelRepo.findNovelMuteById(context.db, id);
+  if (!mute) return null;
+  await NovelRepo.endNovelMute(context.db, id);
+  return { id };
 }
 
 // ==================== export and backup ====================

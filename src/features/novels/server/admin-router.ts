@@ -9,6 +9,7 @@ import {
   AdminNoteListInputSchema,
   AdminNoteListSchema,
   AdminNovelListSchema,
+  AdminNovelMuteListSchema,
   AdminNovelStatsInputSchema,
   AdminNovelStatsSchema,
   AdminNovelTagsSchema,
@@ -30,6 +31,7 @@ import {
   RenameNovelTagInputSchema,
   RetryImportInputSchema,
   SetNovelTagsInputSchema,
+  UnmuteNovelUserInputSchema,
   UpdateChapterInputSchema,
   UpdateNovelInputSchema,
 } from "@/features/novels/novels.schema";
@@ -492,6 +494,38 @@ const restoreNote = adminProcedure
     return { status };
   });
 
+const mutes = adminProcedure
+  .route({
+    method: "GET",
+    path: "/admin/novels/mutes",
+    summary: "List reader mutes",
+    description:
+      "Every novel mute, newest first, with its level, end and the reason it was set.",
+    tags: ["Admin Novels"],
+  })
+  .output(AdminNovelMuteListSchema)
+  .handler(({ context }) => NovelService.listAdminMutes(context));
+
+const unmute = adminProcedure
+  .errors({
+    MUTE_NOT_FOUND: { status: 404, message: "Mute not found." },
+  })
+  .route({
+    method: "POST",
+    path: "/admin/novels/mutes/{id}/unmute",
+    summary: "Lift a reader's novel mute",
+    description:
+      "Ends the mute now; the recorded level still raises the next one.",
+    tags: ["Admin Novels"],
+  })
+  .input(UnmuteNovelUserInputSchema)
+  .output(z.object({ success: z.boolean() }))
+  .handler(async ({ context, input, errors }) => {
+    const result = await NovelService.unmuteNovelReader(context, input.id);
+    if (!result) throw errors.MUTE_NOT_FOUND();
+    return { success: true };
+  });
+
 export default {
   list,
   update,
@@ -516,4 +550,6 @@ export default {
   notes,
   removeNote,
   restoreNote,
+  mutes,
+  unmute,
 };

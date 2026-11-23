@@ -390,6 +390,16 @@
         }
       }
     },
+    "myMute": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "GET",
+          "path": "/novels/mute"
+        }
+      }
+    },
     "createNote": {
       "~orpc": {
         "errorMap": {},
@@ -739,6 +749,38 @@
             "method": "POST",
             "path": "/admin/novels/notes/{id}/restore"
           }
+        }
+      },
+      "mutes": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "GET",
+            "path": "/admin/novels/mutes"
+          }
+        }
+      },
+      "unmute": {
+        "~orpc": {
+          "errorMap": {},
+          "meta": {},
+          "route": {
+            "method": "POST",
+            "path": "/admin/novels/mutes/{id}/unmute"
+          }
+        }
+      }
+    }
+  },
+  "readingHistory": {
+    "reading": {
+      "~orpc": {
+        "errorMap": {},
+        "meta": {},
+        "route": {
+          "method": "GET",
+          "path": "/profile/reading"
         }
       }
     }

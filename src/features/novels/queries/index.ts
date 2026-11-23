@@ -103,6 +103,16 @@ export function novelProgressQuery(novelId: number, enabled: boolean) {
   });
 }
 
+export function myMuteQuery(enabled: boolean) {
+  return queryOptions({
+    queryKey: [...NOVELS_QUERY_KEY, "my-mute"],
+    queryFn: ({ signal }) => orpcClient.novels.myMute(undefined, { signal }),
+    enabled,
+    retry: false,
+    staleTime: 60_000,
+  });
+}
+
 export function novelSettingsQuery(enabled: boolean) {
   return queryOptions({
     queryKey: [...NOVELS_QUERY_KEY, "settings"],
@@ -153,6 +163,11 @@ export function adminNovelTagsQuery(novelId: number) {
       orpcClient.novels.admin.novelTags({ novelId }, { signal }),
   });
 }
+
+export const adminNovelMutesQuery = queryOptions({
+  queryKey: [...NOVELS_QUERY_KEY, "admin", "mutes"],
+  queryFn: ({ signal }) => orpcClient.novels.admin.mutes(undefined, { signal }),
+});
 
 export function adminNotesQuery(status?: "visible" | "removed") {
   return queryOptions({

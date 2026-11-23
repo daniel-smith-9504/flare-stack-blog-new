@@ -65,6 +65,7 @@ import { Route as AdminFriendLinksIndexRouteImport } from './routes/admin/friend
 import { Route as AdminMediaIndexRouteImport } from './routes/admin/media/index'
 import { Route as AdminNovelsIndexRouteImport } from './routes/admin/novels/index'
 import { Route as AdminNovelsIdRouteImport } from './routes/admin/novels/$id'
+import { Route as AdminNovelsMutesRouteImport } from './routes/admin/novels/mutes'
 import { Route as AdminNovelsNotesRouteImport } from './routes/admin/novels/notes'
 import { Route as AdminNovelsStatsRouteImport } from './routes/admin/novels/stats'
 import { Route as AdminNovelsTagsRouteImport } from './routes/admin/novels/tags'
@@ -360,6 +361,11 @@ const AdminNovelsIdRoute = AdminNovelsIdRouteImport.update({
   path: '/novels/$id',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminNovelsMutesRoute = AdminNovelsMutesRouteImport.update({
+  id: '/novels/mutes',
+  path: '/novels/mutes',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminNovelsNotesRoute = AdminNovelsNotesRouteImport.update({
   id: '/novels/notes',
   path: '/novels/notes',
@@ -487,6 +493,7 @@ export interface FileRoutesByFullPath {
   '/admin/access/agent-skill': typeof AdminAccessAgentSkillRoute
   '/admin/access/api-keys': typeof AdminAccessApiKeysRoute
   '/admin/novels/$id': typeof AdminNovelsIdRoute
+  '/admin/novels/mutes': typeof AdminNovelsMutesRoute
   '/admin/novels/notes': typeof AdminNovelsNotesRoute
   '/admin/novels/stats': typeof AdminNovelsStatsRoute
   '/admin/novels/tags': typeof AdminNovelsTagsRoute
@@ -552,6 +559,7 @@ export interface FileRoutesByTo {
   '/admin/access/agent-skill': typeof AdminAccessAgentSkillRoute
   '/admin/access/api-keys': typeof AdminAccessApiKeysRoute
   '/admin/novels/$id': typeof AdminNovelsIdRoute
+  '/admin/novels/mutes': typeof AdminNovelsMutesRoute
   '/admin/novels/notes': typeof AdminNovelsNotesRoute
   '/admin/novels/stats': typeof AdminNovelsStatsRoute
   '/admin/novels/tags': typeof AdminNovelsTagsRoute
@@ -625,6 +633,7 @@ export interface FileRoutesById {
   '/admin/access/agent-skill': typeof AdminAccessAgentSkillRoute
   '/admin/access/api-keys': typeof AdminAccessApiKeysRoute
   '/admin/novels/$id': typeof AdminNovelsIdRoute
+  '/admin/novels/mutes': typeof AdminNovelsMutesRoute
   '/admin/novels/notes': typeof AdminNovelsNotesRoute
   '/admin/novels/stats': typeof AdminNovelsStatsRoute
   '/admin/novels/tags': typeof AdminNovelsTagsRoute
@@ -697,6 +706,7 @@ export interface FileRouteTypes {
     | '/admin/access/agent-skill'
     | '/admin/access/api-keys'
     | '/admin/novels/$id'
+    | '/admin/novels/mutes'
     | '/admin/novels/notes'
     | '/admin/novels/stats'
     | '/admin/novels/tags'
@@ -762,6 +772,7 @@ export interface FileRouteTypes {
     | '/admin/access/agent-skill'
     | '/admin/access/api-keys'
     | '/admin/novels/$id'
+    | '/admin/novels/mutes'
     | '/admin/novels/notes'
     | '/admin/novels/stats'
     | '/admin/novels/tags'
@@ -834,6 +845,7 @@ export interface FileRouteTypes {
     | '/admin/access/agent-skill'
     | '/admin/access/api-keys'
     | '/admin/novels/$id'
+    | '/admin/novels/mutes'
     | '/admin/novels/notes'
     | '/admin/novels/stats'
     | '/admin/novels/tags'
@@ -1273,6 +1285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminNovelsIdRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/novels/mutes': {
+      id: '/admin/novels/mutes'
+      path: '/novels/mutes'
+      fullPath: '/admin/novels/mutes'
+      preLoaderRoute: typeof AdminNovelsMutesRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/novels/notes': {
       id: '/admin/novels/notes'
       path: '/novels/notes'
@@ -1540,6 +1559,7 @@ interface AdminRouteRouteChildren {
   AdminTaxonomyRoute: typeof AdminTaxonomyRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminNovelsIdRoute: typeof AdminNovelsIdRoute
+  AdminNovelsMutesRoute: typeof AdminNovelsMutesRoute
   AdminNovelsNotesRoute: typeof AdminNovelsNotesRoute
   AdminNovelsStatsRoute: typeof AdminNovelsStatsRoute
   AdminNovelsTagsRoute: typeof AdminNovelsTagsRoute
@@ -1560,6 +1580,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminTaxonomyRoute: AdminTaxonomyRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminNovelsIdRoute: AdminNovelsIdRoute,
+  AdminNovelsMutesRoute: AdminNovelsMutesRoute,
   AdminNovelsNotesRoute: AdminNovelsNotesRoute,
   AdminNovelsStatsRoute: AdminNovelsStatsRoute,
   AdminNovelsTagsRoute: AdminNovelsTagsRoute,

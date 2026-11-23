@@ -112,6 +112,82 @@
   display: flex;
   justify-content: center;
 }
+.account-reading {
+  display: grid;
+  gap: 8px;
+  padding: 24px 20px;
+}
+.account-reading h2 {
+  font-size: 16px;
+  font-weight: 700;
+}
+.account-reading > p {
+  color: var(--fuwari-fg-50);
+  font-size: 14px;
+  line-height: 1.65;
+}
+.account-reading-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 8px 0;
+}
+.account-reading-summary > div {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--fuwari-fg-50) 8%, transparent);
+}
+.account-reading-summary dt {
+  color: var(--fuwari-fg-50);
+  font-size: 12px;
+}
+.account-reading-summary dd {
+  font-size: 20px;
+  font-weight: 700;
+}
+.account-reading-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.account-reading-columns h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.account-reading-columns ul {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 0;
+  list-style: none;
+}
+.account-reading-columns li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+.account-reading-columns li a {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account-reading-columns li span {
+  color: var(--fuwari-fg-50);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.account-reading-empty {
+  margin-top: 10px;
+  color: var(--fuwari-fg-50);
+  font-size: 13px;
+}
 @media (max-width: 639px) {
   .account-page {
     padding: 24px var(--theme-standalone-pad-x-narrow, 24px);
@@ -128,5 +204,11 @@
   .account-setting-row {
     padding: 22px 0;
     gap: 16px;
+  }
+  .account-reading {
+    padding: 22px 0;
+  }
+  .account-reading-columns {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
