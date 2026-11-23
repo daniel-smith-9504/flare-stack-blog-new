@@ -34,36 +34,25 @@ type ReadContext = { db: DB; env: Env };
 
 // ==================== public reads ====================
 
-export async function getNovelsPage(
-  context: ReadContext,
-  page: number,
-  tagSlug?: string,
-) {
-  const total = await NovelRepo.countReadyNovels(context.db, tagSlug);
+export async function getNovelsPage(context: ReadContext, page: number) {
+  const total = await NovelRepo.countReadyNovels(context.db);
   const totalPages = Math.max(1, Math.ceil(total / NOVELS_PER_PAGE));
   const current = Math.min(page, totalPages);
   const items = await NovelRepo.findReadyNovels(context.db, {
     limit: NOVELS_PER_PAGE,
     offset: (current - 1) * NOVELS_PER_PAGE,
-    tagSlug,
   });
   return { items, page: current, totalPages };
-}
-
-export function listShelfTags(context: ReadContext) {
-  return NovelRepo.listTags(context.db);
 }
 
 export async function getNovelDetail(context: ReadContext, id: number) {
   const novel = await NovelRepo.findReadyNovelById(context.db, id);
   if (!novel) return null;
-  const [chapters, tags] = await Promise.all([
-    NovelRepo.listChapters(context.db, id),
-    NovelRepo.listNovelTags(context.db, id),
-  ]);
+  const chapters = await NovelRepo.listChapters(context.db, id);
   return {
     id: novel.id,
     title: novel.title,
+    slug: novel.slug,
     author: novel.author,
     description: novel.description,
     category: novel.category,
@@ -73,8 +62,17 @@ export async function getNovelDetail(context: ReadContext, id: number) {
     wordCount: novel.wordCount,
     updatedAt: novel.updatedAt,
     chapters,
-    tags,
   };
+}
+
+/** A book by its readable URL; a legacy numeric URL still resolves. */
+export async function getNovelDetailBySlug(context: ReadContext, slug: string) {
+  const novel =
+    (await NovelRepo.findReadyNovelBySlug(context.db, slug)) ??
+    (/^\d+$/u.test(slug)
+      ? await NovelRepo.findReadyNovelById(context.db, Number(slug))
+      : null);
+  return novel ? getNovelDetail(context, novel.id) : null;
 }
 
 export function getProgress(
@@ -630,54 +628,6 @@ export async function moveAdminChapter(
   if (fromText !== null)
     await putChapterText(context.env, novelId, to, fromText);
   if (toText !== null) await putChapterText(context.env, novelId, from, toText);
-  return true;
-}
-
-// ==================== the Admin's tags ====================
-
-export function listAdminTags(context: ReadContext) {
-  return NovelRepo.listAdminTags(context.db);
-}
-
-export async function createAdminTag(context: ReadContext, name: string) {
-  const slug = NovelRepo.novelTagSlug(name);
-  if (!slug) return null;
-  return NovelRepo.createTag(context.db, name.trim(), slug);
-}
-
-export async function renameAdminTag(
-  context: ReadContext,
-  id: number,
-  name: string,
-) {
-  const slug = NovelRepo.novelTagSlug(name);
-  if (!slug) return null;
-  return NovelRepo.renameTag(context.db, id, name.trim(), slug);
-}
-
-export function deleteAdminTag(context: ReadContext, id: number) {
-  return NovelRepo.deleteTag(context.db, id);
-}
-
-export async function getNovelTagAssignment(
-  context: ReadContext,
-  novelId: number,
-) {
-  const [tags, assigned] = await Promise.all([
-    NovelRepo.listAdminTags(context.db),
-    NovelRepo.listNovelTagIds(context.db, novelId),
-  ]);
-  return { tags, assigned };
-}
-
-export async function setNovelTagAssignment(
-  context: ReadContext,
-  novelId: number,
-  tagIds: number[],
-) {
-  const novel = await NovelRepo.findNovelById(context.db, novelId);
-  if (!novel) return false;
-  await NovelRepo.setNovelTags(context.db, novelId, tagIds);
   return true;
 }
 

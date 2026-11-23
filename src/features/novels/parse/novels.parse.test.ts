@@ -90,4 +90,85 @@ describe("parseEpub", () => {
       ),
     ).toThrow(/encrypted/u);
   });
+
+  it("names chapters from an EPUB 3 navigation document", () => {
+    const parsed = parseEpub(
+      epub({
+        "META-INF/container.xml": container,
+        "OEBPS/content.opf":
+          "<package><metadata><dc:title>Navigated</dc:title></metadata><manifest>" +
+          '<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>' +
+          '<item id="one" href="one.xhtml" media-type="application/xhtml+xml"/>' +
+          '</manifest><spine><itemref idref="one"/></spine></package>',
+        "OEBPS/nav.xhtml":
+          '<html xmlns:epub="http://www.idpf.org/2007/ops"><body><nav epub:type="toc"><ol><li><a href="one.xhtml">From the contents</a></li></ol></nav></body></html>',
+        "OEBPS/one.xhtml":
+          "<html><body><p>A short body without a heading of its own.</p></body></html>",
+      }),
+    );
+    expect(parsed.chapters.map((chapter) => chapter.title)).toEqual([
+      "From the contents",
+    ]);
+  });
+
+  it("names chapters from an EPUB 2 NCX", () => {
+    const parsed = parseEpub(
+      epub({
+        "META-INF/container.xml": container,
+        "OEBPS/content.opf":
+          "<package><metadata><dc:title>Legacy</dc:title></metadata><manifest>" +
+          '<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>' +
+          '<item id="one" href="one.xhtml" media-type="application/xhtml+xml"/>' +
+          '</manifest><spine toc="ncx"><itemref idref="one"/></spine></package>',
+        "OEBPS/toc.ncx":
+          '<ncx><navMap><navPoint><navLabel><text>Legacy title</text></navLabel><content src="one.xhtml"/></navPoint></navMap></ncx>',
+        "OEBPS/one.xhtml": "<html><body><p>Body text.</p></body></html>",
+      }),
+    );
+    expect(parsed.chapters[0]?.title).toBe("Legacy title");
+  });
+
+  it("falls back to the manifest when the spine is missing", () => {
+    const parsed = parseEpub(
+      epub({
+        "META-INF/container.xml": container,
+        "OEBPS/content.opf":
+          "<package><metadata><dc:title>No spine</dc:title></metadata><manifest>" +
+          '<item id="one" href="./one.xhtml" media-type="application/xhtml+xml"/>' +
+          '<item id="two" href="two.xhtml" media-type="application/xhtml+xml"/>' +
+          "</manifest></package>",
+        "OEBPS/one.xhtml":
+          "<html><body><h1>One</h1><p>First.</p></body></html>",
+        "OEBPS/two.xhtml":
+          "<html><body><h1>Two</h1><p>Second.</p></body></html>",
+      }),
+    );
+    expect(parsed.chapters.map((chapter) => chapter.title)).toEqual([
+      "One",
+      "Two",
+    ]);
+  });
+
+  it("splits a single-document book at its own headings", () => {
+    const body = Array.from(
+      { length: 3 },
+      (_, index) =>
+        `<h1>Chapter ${index + 1}</h1><p>${"Long enough text. ".repeat(30)}</p>`,
+    ).join("");
+    const parsed = parseEpub(
+      epub({
+        "META-INF/container.xml": container,
+        "OEBPS/content.opf":
+          "<package><metadata><dc:title>Single file</dc:title></metadata><manifest>" +
+          '<item id="one" href="one.xhtml" media-type="application/xhtml+xml"/>' +
+          '</manifest><spine><itemref idref="one"/></spine></package>',
+        "OEBPS/one.xhtml": `<html><body>${body}</body></html>`,
+      }),
+    );
+    expect(parsed.chapters.map((chapter) => chapter.title)).toEqual([
+      "Chapter 1",
+      "Chapter 2",
+      "Chapter 3",
+    ]);
+  });
 });

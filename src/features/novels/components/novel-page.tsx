@@ -55,16 +55,6 @@ export function NovelPage({ novel }: { novel: NovelDetail }) {
                 {novel.category}
               </span>
             ) : null}
-            {novel.tags.map((tag) => (
-              <Link
-                key={tag.id}
-                to="/novels"
-                search={{ tag: tag.slug }}
-                className="rounded-full bg-(--primary)/10 px-2.5 py-0.5 text-(--primary)"
-              >
-                {tag.name}
-              </Link>
-            ))}
             <span>
               {m.novels_chapters_count({ count: novel.chapterCount })}
             </span>
@@ -78,7 +68,7 @@ export function NovelPage({ novel }: { novel: NovelDetail }) {
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link
               to="/novels/$id/read"
-              params={{ id: String(novel.id) }}
+              params={{ id: novel.slug }}
               search={{ chapter: startOrder }}
               className={buttonClass({ variant: "primary" })}
             >
@@ -109,7 +99,7 @@ export function NovelPage({ novel }: { novel: NovelDetail }) {
                 <Link
                   key={bookmark.id}
                   to="/novels/$id/read"
-                  params={{ id: String(novel.id) }}
+                  params={{ id: novel.slug }}
                   search={{ chapter: bookmark.chapterOrder }}
                   className="rounded-full bg-black/5 px-3 py-1 text-xs hover:text-(--primary) dark:bg-white/10"
                 >
@@ -126,7 +116,7 @@ export function NovelPage({ novel }: { novel: NovelDetail }) {
             <li key={chapter.order}>
               <Link
                 to="/novels/$id/read"
-                params={{ id: String(novel.id) }}
+                params={{ id: novel.slug }}
                 search={{ chapter: chapter.order }}
                 className="fuwari-card-base flex items-baseline gap-2 px-3 py-2 text-sm transition-colors hover:text-(--primary)"
               >

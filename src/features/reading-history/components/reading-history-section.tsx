@@ -88,7 +88,7 @@ export function ReadingHistorySection() {
                       <li key={novel.id}>
                         <Link
                           to="/novels/$id/read"
-                          params={{ id: String(novel.id) }}
+                          params={{ id: novel.slug }}
                           search={{ chapter: novel.chapterOrder }}
                         >
                           {novel.title}

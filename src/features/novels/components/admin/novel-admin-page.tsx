@@ -8,8 +8,8 @@ import {
   Image as ImageIcon,
   ListTree,
   MessageSquareWarning,
+  Pencil,
   RefreshCw,
-  Tags,
   Trash2,
   Upload,
   UserX,
@@ -21,7 +21,6 @@ import { Button, buttonClass } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { NovelCover } from "@/features/novels/components/novel-cover";
-import { NovelTagAssignment } from "@/features/novels/components/admin/novel-tag-assignment";
 import type {
   AdminNovel,
   GutenbergBook,
@@ -169,6 +168,19 @@ export function NovelAdminPage() {
     }
   };
 
+  const renameNovel = async (novel: AdminNovel) => {
+    const title = window.prompt(m.admin_novels_rename_prompt(), novel.title);
+    const next = title?.trim();
+    if (!next || next === novel.title) return;
+    try {
+      await orpcClient.novels.admin.update({ id: novel.id, title: next });
+      toast.success(m.admin_novels_rename_saved());
+      refresh();
+    } catch {
+      toast.error(m.admin_novels_rename_failed());
+    }
+  };
+
   const restoreBackup = async (file: File) => {
     setRestoring(true);
     try {
@@ -203,13 +215,6 @@ export function NovelAdminPage() {
           >
             <BarChart3 size={15} />
             {m.admin_novel_stats_title()}
-          </Link>
-          <Link
-            to="/admin/novels/tags"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-black/5 px-3 py-1.5 dark:bg-white/10"
-          >
-            <Tags size={15} />
-            {m.admin_novel_tags_title()}
           </Link>
           <Link
             to="/admin/novels/notes"
@@ -360,6 +365,9 @@ export function NovelAdminPage() {
                     <p className="truncate text-xs text-black/45 dark:text-white/45">
                       {novel.author || m.novels_unknown_author()}
                     </p>
+                    <p className="mt-0.5 truncate text-xs text-black/35 dark:text-white/35">
+                      /novels/{novel.slug}
+                    </p>
                     <p className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-black/45 dark:text-white/45">
                       <span>{STATUS_LABELS[novel.status]()}</span>
                       <span>
@@ -374,6 +382,15 @@ export function NovelAdminPage() {
                         {novel.error}
                       </p>
                     ) : null}
+                    <Button
+                      variant="text"
+                      size="sm"
+                      className="mt-0.5"
+                      icon={<Pencil size={13} />}
+                      onClick={() => void renameNovel(novel)}
+                    >
+                      {m.admin_novels_rename()}
+                    </Button>
                     <Button
                       variant="text"
                       size="sm"
@@ -397,14 +414,13 @@ export function NovelAdminPage() {
                       </Link>
                       <Link
                         to="/novels/$id"
-                        params={{ id: String(novel.id) }}
+                        params={{ id: novel.slug }}
                         className="text-xs text-black/55 hover:text-(--primary) dark:text-white/55"
                       >
                         {m.admin_novels_view()}
                       </Link>
                     </>
                   ) : null}
-                  <NovelTagAssignment novelId={novel.id} />
                   {novel.status === "failed" ? (
                     <Button
                       variant="plain"

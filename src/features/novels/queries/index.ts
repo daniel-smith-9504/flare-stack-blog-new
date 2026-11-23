@@ -4,25 +4,20 @@ import { orpcClient } from "@/lib/orpc";
 
 export const NOVELS_QUERY_KEY = ["novels"] as const;
 
-export function novelsPageQuery(page: number, tag?: string) {
+export function novelsPageQuery(page: number) {
   return queryOptions({
-    queryKey: [...NOVELS_QUERY_KEY, "list", page, tag ?? null],
-    queryFn: ({ signal }) => orpcClient.novels.list({ page, tag }, { signal }),
+    queryKey: [...NOVELS_QUERY_KEY, "list", page],
+    queryFn: ({ signal }) => orpcClient.novels.list({ page }, { signal }),
   });
 }
 
-export const shelfTagsQuery = queryOptions({
-  queryKey: [...NOVELS_QUERY_KEY, "tags"],
-  queryFn: ({ signal }) => orpcClient.novels.tags(undefined, { signal }),
-});
-
 /** Resolves to null for a book that does not exist (the server answers 404). */
-export function novelQuery(id: number) {
+export function novelQuery(slug: string) {
   return queryOptions({
-    queryKey: [...NOVELS_QUERY_KEY, "detail", id],
+    queryKey: [...NOVELS_QUERY_KEY, "detail", slug],
     queryFn: async ({ signal }) => {
       try {
-        return await orpcClient.novels.byId({ id }, { signal });
+        return await orpcClient.novels.bySlug({ slug }, { signal });
       } catch (error) {
         if (error instanceof ORPCError && error.code === "NOVEL_NOT_FOUND")
           return null;
@@ -148,19 +143,6 @@ export function adminChapterQuery(novelId: number, order: number) {
     queryKey: [...NOVELS_QUERY_KEY, "admin", "chapter", novelId, order],
     queryFn: ({ signal }) =>
       orpcClient.novels.admin.chapter({ novelId, order }, { signal }),
-  });
-}
-
-export const adminTagsQuery = queryOptions({
-  queryKey: [...NOVELS_QUERY_KEY, "admin", "tags"],
-  queryFn: ({ signal }) => orpcClient.novels.admin.tags(undefined, { signal }),
-});
-
-export function adminNovelTagsQuery(novelId: number) {
-  return queryOptions({
-    queryKey: [...NOVELS_QUERY_KEY, "admin", "novel-tags", novelId],
-    queryFn: ({ signal }) =>
-      orpcClient.novels.admin.novelTags({ novelId }, { signal }),
   });
 }
 

@@ -35,6 +35,7 @@ export const NovelVoteChoiceSchema = z.enum(NOVEL_VOTE_CHOICES);
 export const NovelSummarySchema = z.object({
   id: z.number().int(),
   title: z.string(),
+  slug: z.string(),
   author: z.string(),
   description: z.string(),
   category: z.string().nullable(),
@@ -57,16 +58,8 @@ export const NovelProgressSchema = z.object({
   updatedAt: coercedDate,
 });
 
-export const NovelTagSchema = z.object({
-  id: z.number().int(),
-  name: z.string(),
-  slug: z.string(),
-  novelCount: z.number().int().default(0),
-});
-
 export const NovelDetailSchema = NovelSummarySchema.extend({
   chapters: z.array(NovelChapterSummarySchema),
-  tags: z.array(NovelTagSchema),
 });
 
 export const NovelProgressInputSchema = z.strictObject({
@@ -81,11 +74,6 @@ export const NovelListInputSchema = z.object({
     .max(MAX_PAGE_NUMBER)
     .default(1)
     .describe("The page, from 1. A page past the last answers the last page."),
-  tag: z
-    .string()
-    .max(80)
-    .optional()
-    .describe("Only books carrying this tag's slug."),
 });
 
 export const NovelListResponseSchema = z.object({
@@ -95,6 +83,12 @@ export const NovelListResponseSchema = z.object({
 });
 
 export const NovelIdInputSchema = z.strictObject({ id: PathIdSchema });
+
+export const NovelSlugInputSchema = z
+  .strictObject({
+    slug: z.string().min(1).max(200),
+  })
+  .describe("The readable part of a book's URL, or a legacy numeric id.");
 
 export const NovelChapterInputSchema = z.strictObject({
   novelId: PathIdSchema,
@@ -446,33 +440,6 @@ export const BatchDeleteChaptersInputSchema = z.strictObject({
 
 export const AdminChapterOutputSchema = z.object({ success: z.boolean() });
 
-// ==================== the Admin's tags ====================
-
-export const NovelTagListSchema = z.array(NovelTagSchema);
-
-export const CreateNovelTagInputSchema = z.strictObject({
-  name: z.string().min(1).max(60),
-});
-
-export const RenameNovelTagInputSchema = z.strictObject({
-  id: PathIdSchema,
-  name: z.string().min(1).max(60),
-});
-
-export const DeleteNovelTagInputSchema = z.strictObject({ id: PathIdSchema });
-
-export const NovelTagOutputSchema = NovelTagSchema;
-
-export const SetNovelTagsInputSchema = z.strictObject({
-  novelId: PathIdSchema,
-  tagIds: z.array(PathIdSchema).max(20),
-});
-
-export const AdminNovelTagsSchema = z.object({
-  tags: NovelTagListSchema,
-  assigned: z.array(z.number().int()),
-});
-
 // ==================== the Admin's reading report ====================
 
 export const AdminNovelStatsInputSchema = z.strictObject({
@@ -518,7 +485,6 @@ export type NovelChapterContent = z.infer<typeof NovelChapterSchema>;
 export type PublicNote = z.infer<typeof PublicNoteSchema>;
 export type OwnNote = z.infer<typeof OwnNoteSchema>;
 export type NovelSettings = z.infer<typeof NovelSettingsSchema>;
-export type NovelTag = z.infer<typeof NovelTagSchema>;
 export type NovelBookmark = z.infer<typeof NovelBookmarkSchema>;
 export type AdminNovel = z.infer<typeof AdminNovelSchema>;
 export type AdminChapter = z.infer<typeof AdminChapterSchema>;

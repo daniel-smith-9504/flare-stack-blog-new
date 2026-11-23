@@ -21,7 +21,7 @@ export const commentSearchSchema = z.object({
   comment: z.optional(z.coerce.number()),
 });
 
-/** `?page=` and `?tag=` of the shelf; a tag that names nothing is no filter. */
+/** `?page=` of the shelf. */
 export const novelsSearchSchema = z.object({
   page: z.catch(
     z.optional(
@@ -31,5 +31,4 @@ export const novelsSearchSchema = z.object({
     ),
     undefined,
   ),
-  tag: z.catch(z.optional(z.string().check(z.maxLength(80))), undefined),
 });

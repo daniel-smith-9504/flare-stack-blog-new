@@ -12,8 +12,6 @@ import {
   NovelReadingDailyTable,
   NovelScoreLogsTable,
   NovelSettingsTable,
-  NovelTagLinksTable,
-  NovelTagsTable,
   NovelsTable,
   PageViewsTable,
   user,
@@ -42,6 +40,7 @@ export function countWords(text: string) {
 const summaryColumns = {
   id: NovelsTable.id,
   title: NovelsTable.title,
+  slug: NovelsTable.slug,
   author: NovelsTable.author,
   description: NovelsTable.description,
   category: NovelsTable.category,
@@ -52,24 +51,7 @@ const summaryColumns = {
   updatedAt: NovelsTable.updatedAt,
 };
 
-export async function countReadyNovels(db: DB, tagSlug?: string) {
-  if (tagSlug) {
-    const [row] = await db
-      .select({ total: count() })
-      .from(NovelsTable)
-      .innerJoin(
-        NovelTagLinksTable,
-        eq(NovelTagLinksTable.novelId, NovelsTable.id),
-      )
-      .innerJoin(
-        NovelTagsTable,
-        eq(NovelTagsTable.id, NovelTagLinksTable.tagId),
-      )
-      .where(
-        and(eq(NovelsTable.status, "ready"), eq(NovelTagsTable.slug, tagSlug)),
-      );
-    return Number(row?.total ?? 0);
-  }
+export async function countReadyNovels(db: DB) {
   const [row] = await db
     .select({ total: count() })
     .from(NovelsTable)
@@ -79,30 +61,8 @@ export async function countReadyNovels(db: DB, tagSlug?: string) {
 
 export async function findReadyNovels(
   db: DB,
-  options: { limit: number; offset: number; tagSlug?: string },
+  options: { limit: number; offset: number },
 ) {
-  if (options.tagSlug) {
-    return db
-      .select(summaryColumns)
-      .from(NovelsTable)
-      .innerJoin(
-        NovelTagLinksTable,
-        eq(NovelTagLinksTable.novelId, NovelsTable.id),
-      )
-      .innerJoin(
-        NovelTagsTable,
-        eq(NovelTagsTable.id, NovelTagLinksTable.tagId),
-      )
-      .where(
-        and(
-          eq(NovelsTable.status, "ready"),
-          eq(NovelTagsTable.slug, options.tagSlug),
-        ),
-      )
-      .orderBy(desc(NovelsTable.updatedAt), desc(NovelsTable.id))
-      .limit(options.limit)
-      .offset(options.offset);
-  }
   return db
     .select(summaryColumns)
     .from(NovelsTable)
@@ -110,39 +70,6 @@ export async function findReadyNovels(
     .orderBy(desc(NovelsTable.updatedAt), desc(NovelsTable.id))
     .limit(options.limit)
     .offset(options.offset);
-}
-
-/** Every shelf tag with the number of ready books carrying it. */
-export async function listTags(db: DB) {
-  return db
-    .select({
-      id: NovelTagsTable.id,
-      name: NovelTagsTable.name,
-      slug: NovelTagsTable.slug,
-      novelCount: count(NovelTagLinksTable.novelId),
-    })
-    .from(NovelTagsTable)
-    .leftJoin(
-      NovelTagLinksTable,
-      eq(NovelTagLinksTable.tagId, NovelTagsTable.id),
-    )
-    .innerJoin(NovelsTable, eq(NovelsTable.id, NovelTagLinksTable.novelId))
-    .where(eq(NovelsTable.status, "ready"))
-    .groupBy(NovelTagsTable.id, NovelTagsTable.name, NovelTagsTable.slug)
-    .orderBy(asc(NovelTagsTable.name));
-}
-
-export async function listNovelTags(db: DB, novelId: number) {
-  return db
-    .select({
-      id: NovelTagsTable.id,
-      name: NovelTagsTable.name,
-      slug: NovelTagsTable.slug,
-    })
-    .from(NovelTagLinksTable)
-    .innerJoin(NovelTagsTable, eq(NovelTagsTable.id, NovelTagLinksTable.tagId))
-    .where(eq(NovelTagLinksTable.novelId, novelId))
-    .orderBy(asc(NovelTagsTable.name));
 }
 
 export async function findNovelById(db: DB, id: number): Promise<Novel | null> {
@@ -162,6 +89,18 @@ export async function findReadyNovelById(
     .select()
     .from(NovelsTable)
     .where(and(eq(NovelsTable.id, id), eq(NovelsTable.status, "ready")))
+    .limit(1);
+  return novel ?? null;
+}
+
+export async function findReadyNovelBySlug(
+  db: DB,
+  slug: string,
+): Promise<Novel | null> {
+  const [novel] = await db
+    .select()
+    .from(NovelsTable)
+    .where(and(eq(NovelsTable.slug, slug), eq(NovelsTable.status, "ready")))
     .limit(1);
   return novel ?? null;
 }
@@ -218,6 +157,33 @@ export async function findChapterNeighbours(
 
 // ==================== imports ====================
 
+/** The readable URL a book's title becomes: Chinese stays, punctuation parts. */
+export function novelSlugBase(title: string) {
+  const slug = title
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
+    .replace(/^-+|-+$/gu, "")
+    .slice(0, 120)
+    .replace(/-+$/gu, "");
+  return slug || "novel";
+}
+
+/** Two books may share a title, so later ones get a number. */
+async function uniqueNovelSlug(db: DB, title: string, excludeId?: number) {
+  const base = novelSlugBase(title);
+  for (let suffix = 1; suffix < 100; suffix += 1) {
+    const candidate = suffix === 1 ? base : `${base}-${suffix}`;
+    const [taken] = await db
+      .select({ id: NovelsTable.id })
+      .from(NovelsTable)
+      .where(eq(NovelsTable.slug, candidate))
+      .limit(1);
+    if (!taken || taken.id === excludeId) return candidate;
+  }
+  return `${base}-${Date.now().toString(36)}`;
+}
+
 export async function insertNovel(
   db: DB,
   data: {
@@ -237,6 +203,7 @@ export async function insertNovel(
     .insert(NovelsTable)
     .values({
       title: data.title,
+      slug: await uniqueNovelSlug(db, data.title),
       author: data.author ?? "",
       description: data.description ?? "",
       category: data.category ?? null,
@@ -263,9 +230,12 @@ export async function updateNovel(
     coverUrl: string | null;
   }>,
 ) {
+  const patch: typeof data & { slug?: string } = { ...data };
+  if (data.title !== undefined)
+    patch.slug = await uniqueNovelSlug(db, data.title, id);
   const written = await db
     .update(NovelsTable)
-    .set({ ...data, updatedAt: new Date() })
+    .set({ ...patch, updatedAt: new Date() })
     .where(eq(NovelsTable.id, id))
     .returning({ id: NovelsTable.id });
   return written.length > 0;
@@ -284,11 +254,14 @@ export async function setNovelStatus(
     description: string;
   }> = {},
 ) {
+  const patch: typeof data & { slug?: string } = { ...data };
+  if (data.title !== undefined)
+    patch.slug = await uniqueNovelSlug(db, data.title, id);
   await db
     .update(NovelsTable)
     .set({
       status,
-      ...data,
+      ...patch,
       ...(status === "ready" ? { error: null, fileKey: null } : {}),
       updatedAt: new Date(),
     })
@@ -1203,96 +1176,12 @@ export async function setNovelChapterTotals(
     .where(eq(NovelsTable.id, novelId));
 }
 
-// ==================== the Admin's tags ====================
-
-export function novelTagSlug(name: string) {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/[\s/]+/gu, "-")
-    .replace(/^-+|-+$/gu, "")
-    .slice(0, 60);
-}
-
-export async function listAdminTags(db: DB) {
-  return db
-    .select({
-      id: NovelTagsTable.id,
-      name: NovelTagsTable.name,
-      slug: NovelTagsTable.slug,
-      novelCount: count(NovelTagLinksTable.novelId),
-    })
-    .from(NovelTagsTable)
-    .leftJoin(
-      NovelTagLinksTable,
-      eq(NovelTagLinksTable.tagId, NovelTagsTable.id),
-    )
-    .groupBy(NovelTagsTable.id, NovelTagsTable.name, NovelTagsTable.slug)
-    .orderBy(asc(NovelTagsTable.name));
-}
-
-export async function createTag(db: DB, name: string, slug: string) {
-  const [row] = await db
-    .insert(NovelTagsTable)
-    .values({ name, slug })
-    .onConflictDoNothing()
-    .returning({
-      id: NovelTagsTable.id,
-      name: NovelTagsTable.name,
-      slug: NovelTagsTable.slug,
-    });
-  return row ?? null;
-}
-
-export async function renameTag(
-  db: DB,
-  id: number,
-  name: string,
-  slug: string,
-) {
-  const [row] = await db
-    .update(NovelTagsTable)
-    .set({ name, slug })
-    .where(eq(NovelTagsTable.id, id))
-    .returning({
-      id: NovelTagsTable.id,
-      name: NovelTagsTable.name,
-      slug: NovelTagsTable.slug,
-    });
-  return row ?? null;
-}
-
-export async function deleteTag(db: DB, id: number) {
-  const deleted = await db
-    .delete(NovelTagsTable)
-    .where(eq(NovelTagsTable.id, id))
-    .returning({ id: NovelTagsTable.id });
-  return deleted.length > 0;
-}
-
-export async function listNovelTagIds(db: DB, novelId: number) {
-  const rows = await db
-    .select({ tagId: NovelTagLinksTable.tagId })
-    .from(NovelTagLinksTable)
-    .where(eq(NovelTagLinksTable.novelId, novelId));
-  return rows.map((row) => row.tagId);
-}
-
-export async function setNovelTags(db: DB, novelId: number, tagIds: number[]) {
-  await db
-    .delete(NovelTagLinksTable)
-    .where(eq(NovelTagLinksTable.novelId, novelId));
-  if (tagIds.length === 0) return;
-  await db
-    .insert(NovelTagLinksTable)
-    .values(tagIds.map((tagId) => ({ novelId, tagId })))
-    .onConflictDoNothing();
-}
-
 // ==================== the Admin's reading report ====================
 
 export async function readNovelStats(db: DB, days: number) {
-  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const dayMs = 86_400_000;
+  const today = Math.floor(Date.now() / dayMs) * dayMs;
+  const since = new Date(today - (days - 1) * dayMs);
   const sinceDay = since.toISOString().slice(0, 10);
   const inWindow = and(
     gte(PageViewsTable.createdAt, since),
@@ -1302,6 +1191,7 @@ export async function readNovelStats(db: DB, days: number) {
   const [
     summaryRows,
     dailyViews,
+    dailyReading,
     topNovelRows,
     topChapterRows,
     readingByNovel,
@@ -1323,6 +1213,15 @@ export async function readNovelStats(db: DB, days: number) {
       .where(inWindow)
       .groupBy(sql`cast(${PageViewsTable.createdAt} / 86400 as integer)`)
       .orderBy(sql`cast(${PageViewsTable.createdAt} / 86400 as integer)`),
+    db
+      .select({
+        day: NovelReadingDailyTable.day,
+        seconds: sql<number>`coalesce(sum(${NovelReadingDailyTable.seconds}), 0)`,
+      })
+      .from(NovelReadingDailyTable)
+      .where(gte(NovelReadingDailyTable.day, sinceDay))
+      .groupBy(NovelReadingDailyTable.day)
+      .orderBy(asc(NovelReadingDailyTable.day)),
     db
       .select({
         id: NovelsTable.id,
@@ -1373,18 +1272,21 @@ export async function readNovelStats(db: DB, days: number) {
     readingByNovel.map((row) => [row.novelId, Number(row.seconds)]),
   );
   const viewsByDay = new Map(
-    dailyViews.map((row) => [Number(row.day), row.views]),
+    dailyViews.map((row) => [Number(row.day), Number(row.views)]),
   );
-  const firstDay = Math.floor(since.getTime() / 86_400_000);
-  const lastDay = Math.floor(Date.now() / 86_400_000);
-  const daily = Array.from(
-    { length: lastDay - firstDay + 1 },
-    (_, index) => firstDay + index,
-  ).map((day) => ({
-    day: day * 86_400_000,
-    views: viewsByDay.get(day) ?? 0,
-    seconds: 0,
-  }));
+  const secondsByDay = new Map(
+    dailyReading.map((row) => [row.day, Number(row.seconds)]),
+  );
+  // Exactly the requested number of days, ending today, so a bar per day.
+  const daily = Array.from({ length: days }, (_, index) => {
+    const day = today - (days - 1 - index) * dayMs;
+    const key = new Date(day).toISOString().slice(0, 10);
+    return {
+      day,
+      views: viewsByDay.get(day / dayMs) ?? 0,
+      seconds: secondsByDay.get(key) ?? 0,
+    };
+  });
 
   const summary = summaryRows[0] ?? { views: 0, visitors: 0 };
   const reading = readingSummary[0] ?? { seconds: 0, words: 0 };

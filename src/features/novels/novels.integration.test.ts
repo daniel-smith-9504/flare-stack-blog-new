@@ -75,6 +75,26 @@ describe("Novels", () => {
     });
   });
 
+  it("reads a book by its title's URL and follows a renamed title", async () => {
+    const { id, db } = await importBook("斗破 苍穹");
+    const stored = await NovelRepo.findNovelById(db, id);
+    expect(stored?.slug).toBe("斗破-苍穹");
+    expect(
+      (await NovelService.getNovelDetailBySlug({ db, env }, "斗破-苍穹"))?.id,
+    ).toBe(id);
+
+    expect(await NovelRepo.updateNovel(db, id, { title: "新的书名" })).toBe(
+      true,
+    );
+    expect((await NovelRepo.findNovelById(db, id))?.slug).toBe("新的书名");
+    expect(
+      await NovelService.getNovelDetailBySlug({ db, env }, "斗破-苍穹"),
+    ).toBeNull();
+    expect(
+      (await NovelService.getNovelDetailBySlug({ db, env }, "新的书名"))?.id,
+    ).toBe(id);
+  });
+
   it("keeps a book that is still importing off the public shelf", async () => {
     const db = getDb(env);
     const id = await NovelRepo.insertNovel(db, { title: "Pending" });

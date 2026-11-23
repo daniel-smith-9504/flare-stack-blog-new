@@ -67,17 +67,36 @@ export function NovelStatsPage() {
               <h2 className="text-sm font-semibold">
                 {m.admin_novel_stats_daily()}
               </h2>
-              <div className="mt-3 flex h-32 items-end gap-1">
-                {data.daily.map((day) => (
-                  <div
-                    key={day.day}
-                    title={`${new Date(day.day).toISOString().slice(0, 10)}: ${day.views}`}
-                    className="flex-1 rounded-t bg-(--primary)/60"
-                    style={{
-                      height: `${Math.max(2, (day.views / peak) * 100)}%`,
-                    }}
-                  />
-                ))}
+              <div className="mt-3 flex gap-2">
+                <div className="flex h-32 flex-col justify-between text-right text-[10px] tabular-nums text-black/40 dark:text-white/40">
+                  <span>{peak}</span>
+                  <span>0</span>
+                </div>
+                <div className="flex h-32 flex-1 items-end gap-px sm:gap-1">
+                  {data.daily.map((day) => {
+                    const date = new Date(day.day).toISOString().slice(0, 10);
+                    return (
+                      <div
+                        key={day.day}
+                        title={`${date} · ${m.admin_novel_stats_views()}: ${day.views} · ${m.admin_novel_stats_minutes()}: ${minutes(day.seconds)}`}
+                        className="flex-1 rounded-t bg-(--primary)/60 transition-colors hover:bg-(--primary)"
+                        style={{
+                          height: `${Math.max(2, (day.views / peak) * 100)}%`,
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="mt-1 flex justify-between pl-7 text-[10px] tabular-nums text-black/40 dark:text-white/40">
+                <span>
+                  {new Date(data.daily[0]?.day ?? 0).toISOString().slice(5, 10)}
+                </span>
+                <span>
+                  {new Date(data.daily.at(-1)?.day ?? 0)
+                    .toISOString()
+                    .slice(5, 10)}
+                </span>
               </div>
             </section>
 

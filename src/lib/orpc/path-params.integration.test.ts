@@ -148,7 +148,12 @@ async function seedPairs(apiKey: string) {
     .returning({ id: MomentsTable.id });
   const novels = await db
     .insert(NovelsTable)
-    .values(["Addressed", "Smuggled"].map((title) => ({ title })))
+    .values(
+      ["Addressed", "Smuggled"].map((title) => ({
+        title,
+        slug: title.toLowerCase(),
+      })),
+    )
     .returning({ id: NovelsTable.id });
   const mediaKeys = ["path-a.png", "path-b.png"];
   await db.insert(MediaTable).values(
@@ -173,9 +178,10 @@ async function seedPairs(apiKey: string) {
     "muted-users": [userIds[0], userIds[1]],
     novels: [novels[0].id, novels[1].id],
     // The request is refused by the path-parameter rule before any lookup,
-    // so a chapter or note only needs a plausible whole number.
+    // so a chapter, note or mute only needs a plausible whole number.
     chapters: [1, 2],
     notes: [1, 2],
+    mutes: [1, 2],
     slugs: [posts[0].slug, posts[1].slug],
   };
   // The kind of object a `{param}` names is the path segment before it.

@@ -19,6 +19,7 @@ export const ReadingHistorySchema = z.object({
     z.object({
       id: z.number().int(),
       title: z.string(),
+      slug: z.string(),
       author: z.string(),
       chapterOrder: z.number().int(),
       chapterCount: z.number().int(),

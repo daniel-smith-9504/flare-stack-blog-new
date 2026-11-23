@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { BookOpen } from "lucide-react";
-import type { NovelSummary, NovelTag } from "@/features/novels/novels.schema";
+import type { NovelSummary } from "@/features/novels/novels.schema";
 import { NovelCover } from "@/features/novels/components/novel-cover";
 import { EmptyState } from "@/components/ui/empty-state";
 import { m } from "@/paraglide/messages";
@@ -9,14 +9,10 @@ export function NovelsPage({
   items,
   page,
   totalPages,
-  tags,
-  activeTag,
 }: {
   items: Array<NovelSummary>;
   page: number;
   totalPages: number;
-  tags: Array<NovelTag>;
-  activeTag?: string;
 }) {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-8">
@@ -28,37 +24,6 @@ export function NovelsPage({
           {m.novels_description()}
         </p>
       </header>
-
-      {tags.length > 0 ? (
-        <div className="mb-5 flex flex-wrap gap-2">
-          <Link
-            to="/novels"
-            search={{ page: undefined, tag: undefined }}
-            className={`rounded-full px-3 py-1 text-xs ${
-              activeTag
-                ? "bg-black/5 dark:bg-white/10"
-                : "bg-(--primary) text-white"
-            }`}
-          >
-            {m.novels_all_tags()}
-          </Link>
-          {tags.map((tag) => (
-            <Link
-              key={tag.id}
-              to="/novels"
-              search={{ page: undefined, tag: tag.slug }}
-              className={`rounded-full px-3 py-1 text-xs ${
-                activeTag === tag.slug
-                  ? "bg-(--primary) text-white"
-                  : "bg-black/5 dark:bg-white/10"
-              }`}
-            >
-              {tag.name}
-              <span className="ml-1 opacity-60">{tag.novelCount}</span>
-            </Link>
-          ))}
-        </div>
-      ) : null}
 
       {items.length === 0 ? (
         <EmptyState
@@ -72,7 +37,7 @@ export function NovelsPage({
             <Link
               key={novel.id}
               to="/novels/$id"
-              params={{ id: String(novel.id) }}
+              params={{ id: novel.slug }}
               className="fuwari-card-base group flex gap-3 p-3 transition-transform hover:-translate-y-0.5"
             >
               <div className="h-36 w-24 shrink-0 overflow-hidden rounded-lg">
@@ -109,7 +74,7 @@ export function NovelsPage({
           {page > 1 ? (
             <Link
               to="/novels"
-              search={{ page: page - 1, tag: activeTag }}
+              search={{ page: page - 1 }}
               className="fuwari-card-base px-3 py-1.5 hover:text-(--primary)"
             >
               {m.novels_page_prev()}
@@ -121,7 +86,7 @@ export function NovelsPage({
           {page < totalPages ? (
             <Link
               to="/novels"
-              search={{ page: page + 1, tag: activeTag }}
+              search={{ page: page + 1 }}
               className="fuwari-card-base px-3 py-1.5 hover:text-(--primary)"
             >
               {m.novels_page_next()}

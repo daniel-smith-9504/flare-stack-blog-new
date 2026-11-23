@@ -388,7 +388,7 @@ export function NovelReader({
   const goToChapter = (order: number) =>
     void navigate({
       to: "/novels/$id/read",
-      params: { id: String(novel.id) },
+      params: { id: novel.slug },
       search: { chapter: order },
     });
 
@@ -607,7 +607,7 @@ export function NovelReader({
           <div className="flex flex-wrap items-center gap-2">
             <Link
               to="/novels/$id"
-              params={{ id: String(novel.id) }}
+              params={{ id: novel.slug }}
               className="inline-flex items-center gap-1.5 text-sm text-black/60 hover:text-(--primary) dark:text-white/60"
             >
               <ArrowLeft size={15} />
@@ -619,7 +619,7 @@ export function NovelReader({
             </span>
             <Link
               to="/novels/$id"
-              params={{ id: String(novel.id) }}
+              params={{ id: novel.slug }}
               className="hidden h-12 w-8 shrink-0 overflow-hidden rounded sm:block"
             >
               <NovelCover title={novel.title} coverUrl={novel.coverUrl} />
@@ -912,7 +912,7 @@ export function NovelReader({
         {chapter.prevOrder !== null ? (
           <Link
             to="/novels/$id/read"
-            params={{ id: String(novel.id) }}
+            params={{ id: novel.slug }}
             search={{ chapter: chapter.prevOrder }}
             className="fuwari-card-base inline-flex items-center gap-1.5 px-3 py-2 text-sm hover:text-(--primary)"
           >
@@ -925,7 +925,7 @@ export function NovelReader({
         {chapter.nextOrder !== null ? (
           <Link
             to="/novels/$id/read"
-            params={{ id: String(novel.id) }}
+            params={{ id: novel.slug }}
             search={{ chapter: chapter.nextOrder }}
             className="fuwari-card-base inline-flex items-center gap-1.5 px-3 py-2 text-sm hover:text-(--primary)"
           >

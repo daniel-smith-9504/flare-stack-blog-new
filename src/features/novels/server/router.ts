@@ -16,7 +16,7 @@ import {
   NovelProgressInputSchema,
   NovelProgressSchema,
   NovelSettingsSchema,
-  NovelTagListSchema,
+  NovelSlugInputSchema,
   MyNovelMuteSchema,
   OwnNoteSchema,
   OwnNotesInputSchema,
@@ -63,19 +63,26 @@ const list = publicProcedure
   .input(NovelListInputSchema)
   .output(NovelListResponseSchema)
   .handler(({ context, input }) =>
-    NovelService.getNovelsPage(context, input.page, input.tag),
+    NovelService.getNovelsPage(context, input.page),
   );
 
-const tags = publicProcedure
+const bySlug = publicProcedure
+  .errors(novelNotFoundErrors)
   .route({
     method: "GET",
-    path: "/novels/tags",
-    summary: "List shelf tags",
-    description: "Every tag on the shelf, with how many books carry it.",
+    path: "/novels/by-slug",
+    summary: "Get a novel by its readable URL",
+    description:
+      "The book and its chapters, looked up by the slug in its URL. A legacy numeric id still resolves.",
     tags: ["Novels"],
   })
-  .output(NovelTagListSchema)
-  .handler(({ context }) => NovelService.listShelfTags(context));
+  .input(NovelSlugInputSchema)
+  .output(NovelDetailSchema)
+  .handler(async ({ context, input, errors }) => {
+    const novel = await NovelService.getNovelDetailBySlug(context, input.slug);
+    if (!novel) throw errors.NOVEL_NOT_FOUND();
+    return novel;
+  });
 
 const byId = publicProcedure
   .errors(novelNotFoundErrors)
@@ -479,7 +486,7 @@ const voteNote = authProcedure
 
 export default {
   list,
-  tags,
+  bySlug,
   byId,
   progress,
   chapter,

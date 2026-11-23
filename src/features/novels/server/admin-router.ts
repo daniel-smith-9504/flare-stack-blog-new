@@ -12,13 +12,10 @@ import {
   AdminNovelMuteListSchema,
   AdminNovelStatsInputSchema,
   AdminNovelStatsSchema,
-  AdminNovelTagsSchema,
   BatchDeleteChaptersInputSchema,
   CreateChapterInputSchema,
-  CreateNovelTagInputSchema,
   DeleteChapterInputSchema,
   DeleteNovelInputSchema,
-  DeleteNovelTagInputSchema,
   GutenbergImportInputSchema,
   GutenbergSearchInputSchema,
   GutenbergSearchSchema,
@@ -26,11 +23,7 @@ import {
   ModerateNoteInputSchema,
   ModerateNoteOutputSchema,
   MoveChapterInputSchema,
-  NovelTagListSchema,
-  NovelTagOutputSchema,
-  RenameNovelTagInputSchema,
   RetryImportInputSchema,
-  SetNovelTagsInputSchema,
   UnmuteNovelUserInputSchema,
   UpdateChapterInputSchema,
   UpdateNovelInputSchema,
@@ -311,116 +304,6 @@ const moveChapter = adminProcedure
     return { success: true };
   });
 
-// ==================== tags ====================
-
-const tags = adminProcedure
-  .route({
-    method: "GET",
-    path: "/admin/novels/tags",
-    summary: "List shelf tags",
-    description: "Every tag and how many books carry it.",
-    tags: ["Admin Novels"],
-  })
-  .output(NovelTagListSchema)
-  .handler(({ context }) => NovelService.listAdminTags(context));
-
-const createTag = adminProcedure
-  .errors({
-    TAG_INVALID: {
-      status: 400,
-      message: "That tag already exists or is empty.",
-    },
-  })
-  .route({
-    method: "POST",
-    path: "/admin/novels/tags",
-    summary: "Create a shelf tag",
-    description: "Adds a tag with a slug derived from its name.",
-    tags: ["Admin Novels"],
-  })
-  .input(CreateNovelTagInputSchema)
-  .output(NovelTagOutputSchema)
-  .handler(async ({ context, input, errors }) => {
-    const created = await NovelService.createAdminTag(context, input.name);
-    if (!created) throw errors.TAG_INVALID();
-    return { ...created, novelCount: 0 };
-  });
-
-const renameTag = adminProcedure
-  .errors({
-    TAG_INVALID: {
-      status: 400,
-      message: "That tag already exists or is empty.",
-    },
-  })
-  .route({
-    method: "PATCH",
-    path: "/admin/novels/tags/{id}",
-    summary: "Rename a shelf tag",
-    description: "Changes a tag's name and slug.",
-    tags: ["Admin Novels"],
-  })
-  .input(RenameNovelTagInputSchema)
-  .output(NovelTagOutputSchema)
-  .handler(async ({ context, input, errors }) => {
-    const renamed = await NovelService.renameAdminTag(
-      context,
-      input.id,
-      input.name,
-    );
-    if (!renamed) throw errors.TAG_INVALID();
-    return { ...renamed, novelCount: 0 };
-  });
-
-const deleteTag = adminProcedure
-  .route({
-    method: "DELETE",
-    path: "/admin/novels/tags/{id}",
-    summary: "Delete a shelf tag",
-    description: "Deletes a tag and removes it from every book.",
-    tags: ["Admin Novels"],
-  })
-  .input(DeleteNovelTagInputSchema)
-  .output(z.object({ success: z.boolean() }))
-  .handler(async ({ context, input }) => ({
-    success: await NovelService.deleteAdminTag(context, input.id),
-  }));
-
-const novelTags = adminProcedure
-  .route({
-    method: "GET",
-    path: "/admin/novels/{novelId}/tags",
-    summary: "List a novel's tags",
-    description: "Every tag, with the ones this book carries marked.",
-    tags: ["Admin Novels"],
-  })
-  .input(AdminChapterListInputSchema)
-  .output(AdminNovelTagsSchema)
-  .handler(({ context, input }) =>
-    NovelService.getNovelTagAssignment(context, input.novelId),
-  );
-
-const setNovelTags = adminProcedure
-  .errors(notFoundErrors)
-  .route({
-    method: "PUT",
-    path: "/admin/novels/{novelId}/tags",
-    summary: "Set a novel's tags",
-    description: "Replaces the set of tags on one book.",
-    tags: ["Admin Novels"],
-  })
-  .input(SetNovelTagsInputSchema)
-  .output(z.object({ success: z.boolean() }))
-  .handler(async ({ context, input, errors }) => {
-    const saved = await NovelService.setNovelTagAssignment(
-      context,
-      input.novelId,
-      input.tagIds,
-    );
-    if (!saved) throw errors.NOVEL_NOT_FOUND();
-    return { success: true };
-  });
-
 // ==================== reading report and annotations ====================
 
 const stats = adminProcedure
@@ -540,12 +423,6 @@ export default {
   deleteChapter,
   batchDeleteChapters,
   moveChapter,
-  tags,
-  createTag,
-  renameTag,
-  deleteTag,
-  novelTags,
-  setNovelTags,
   stats,
   notes,
   removeNote,

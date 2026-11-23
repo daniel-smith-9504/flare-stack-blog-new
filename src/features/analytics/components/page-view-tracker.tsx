@@ -6,29 +6,30 @@ const UNTRACKED = /^\/(admin|api|login|auth)(\/|$)/;
 
 /**
  * Reports each public page a visitor opens to this site's own collector
- * (`/api/track`). One report per path per page load; nothing is sent from the
- * Admin or while previewing a Theme.
+ * (`/api/track`). One report per page load and per chapter of a novel; nothing
+ * is sent from the Admin or while previewing a Theme.
  */
 export function PageViewTracker() {
   const pathname = useLocation({ select: (location) => location.pathname });
+  const searchStr = useLocation({ select: (location) => location.searchStr });
   const reported = useRef<string | null>(null);
 
   useEffect(() => {
-    if (reported.current === pathname) return;
-    reported.current = pathname;
+    // A reader moves through chapters by changing the query, not the path, so
+    // every chapter is its own page view.
+    const key = `${pathname}?${searchStr}`;
+    if (reported.current === key) return;
+    reported.current = key;
 
     if (UNTRACKED.test(pathname)) return;
-    if (new URLSearchParams(window.location.search).has("themePreview")) {
-      return;
-    }
+    const search = new URLSearchParams(searchStr.replace(/^\?/u, ""));
+    if (search.has("themePreview")) return;
 
-    const search = new URLSearchParams(window.location.search);
-    const novel = /^\/novels\/(\d+)\/read$/.exec(pathname);
-    const chapter = novel ? Number(search.get("chapter")) : NaN;
+    const isNovelRead = /^\/novels\/[^/]+\/read$/.exec(pathname) !== null;
+    const chapter = isNovelRead ? Number(search.get("chapter")) : NaN;
     const body = JSON.stringify({
       path: pathname,
       referrer: document.referrer,
-      novelId: novel ? Number(novel[1]) : null,
       chapter: Number.isInteger(chapter) && chapter > 0 ? chapter : null,
     });
     try {
@@ -47,7 +48,7 @@ export function PageViewTracker() {
     } catch {
       // The visitor's page is not affected by a failed report.
     }
-  }, [pathname]);
+  }, [pathname, searchStr]);
 
   return null;
 }

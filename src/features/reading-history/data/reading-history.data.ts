@@ -60,6 +60,7 @@ export async function listReadNovels(db: DB, userId: string, limit: number) {
     .select({
       id: NovelsTable.id,
       title: NovelsTable.title,
+      slug: NovelsTable.slug,
       author: NovelsTable.author,
       chapterCount: NovelsTable.chapterCount,
       lastReadAt: sql<number>`max(${PageViewsTable.createdAt})`,

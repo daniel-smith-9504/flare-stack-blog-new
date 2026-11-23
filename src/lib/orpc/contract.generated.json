@@ -330,13 +330,13 @@
         }
       }
     },
-    "tags": {
+    "bySlug": {
       "~orpc": {
         "errorMap": {},
         "meta": {},
         "route": {
           "method": "GET",
-          "path": "/novels/tags"
+          "path": "/novels/by-slug"
         }
       }
     },
@@ -648,66 +648,6 @@
           "route": {
             "method": "POST",
             "path": "/admin/novels/{novelId}/chapters/move"
-          }
-        }
-      },
-      "tags": {
-        "~orpc": {
-          "errorMap": {},
-          "meta": {},
-          "route": {
-            "method": "GET",
-            "path": "/admin/novels/tags"
-          }
-        }
-      },
-      "createTag": {
-        "~orpc": {
-          "errorMap": {},
-          "meta": {},
-          "route": {
-            "method": "POST",
-            "path": "/admin/novels/tags"
-          }
-        }
-      },
-      "renameTag": {
-        "~orpc": {
-          "errorMap": {},
-          "meta": {},
-          "route": {
-            "method": "PATCH",
-            "path": "/admin/novels/tags/{id}"
-          }
-        }
-      },
-      "deleteTag": {
-        "~orpc": {
-          "errorMap": {},
-          "meta": {},
-          "route": {
-            "method": "DELETE",
-            "path": "/admin/novels/tags/{id}"
-          }
-        }
-      },
-      "novelTags": {
-        "~orpc": {
-          "errorMap": {},
-          "meta": {},
-          "route": {
-            "method": "GET",
-            "path": "/admin/novels/{novelId}/tags"
-          }
-        }
-      },
-      "setNovelTags": {
-        "~orpc": {
-          "errorMap": {},
-          "meta": {},
-          "route": {
-            "method": "PUT",
-            "path": "/admin/novels/{novelId}/tags"
           }
         }
       },

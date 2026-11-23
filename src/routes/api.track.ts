@@ -9,7 +9,29 @@ import {
   visitorIdFromCookie,
 } from "@/features/analytics/analytics";
 import { insertPageView } from "@/features/analytics/data/analytics.data";
+import {
+  findReadyNovelById,
+  findReadyNovelBySlug,
+} from "@/features/novels/data/novels.data";
 import { getDb } from "@/lib/db";
+
+const NOVEL_READ_PATH = /^\/novels\/([^/]+)\/read$/u;
+
+/** URLs carry the book's title; a legacy numeric URL still names its id. */
+async function novelIdOfPath(db: DB, path: string) {
+  const raw = NOVEL_READ_PATH.exec(path)?.[1];
+  if (!raw) return null;
+  let slug = raw;
+  try {
+    slug = decodeURIComponent(raw);
+  } catch {
+    // An unreadable escape is simply a slug that will not match.
+  }
+  const novel =
+    (await findReadyNovelBySlug(db, slug)) ??
+    (/^\d+$/u.test(slug) ? await findReadyNovelById(db, Number(slug)) : null);
+  return novel?.id ?? null;
+}
 
 const NO_STORE = { "Cache-Control": "no-store" } as const;
 
@@ -89,12 +111,16 @@ export const Route = createFileRoute("/api/track")({
         }
 
         try {
-          const novelId =
+          const isNovelRead = NOVEL_READ_PATH.test(path);
+          const knownNovelId =
             typeof body.novelId === "number" &&
             Number.isInteger(body.novelId) &&
             body.novelId > 0
               ? body.novelId
               : null;
+          const novelId = isNovelRead
+            ? (knownNovelId ?? (await novelIdOfPath(db, path)))
+            : null;
           const chapter =
             typeof body.chapter === "number" &&
             Number.isInteger(body.chapter) &&
@@ -104,10 +130,8 @@ export const Route = createFileRoute("/api/track")({
           await insertPageView(db, {
             path,
             postSlug: postSlugOfPath(path),
-            novelId:
-              novelId && /^\/novels\/\d+\/read$/.test(path) ? novelId : null,
-            novelChapter:
-              novelId && /^\/novels\/\d+\/read$/.test(path) ? chapter : null,
+            novelId,
+            novelChapter: novelId ? chapter : null,
             visitorId,
             country: metadataText(context.geo?.country),
             region: metadataText(context.geo?.region),

@@ -1,5 +1,31 @@
+import { XMLParser } from "fast-xml-parser";
 import { strFromU8, unzipSync } from "fflate";
 import type { ParsedChapter, ParsedNovel } from "./txt.parser";
+
+/**
+ * The EPUB reader is built the way Readium and epub.js read a package: the
+ * container names the OPF, the OPF's spine names the reading order, and the
+ * NAV (EPUB 3) or NCX (EPUB 2) supplies chapter titles. Unlike epub.js it
+ * needs no DOM, so it runs in the Worker that consumes the import queue.
+ */
+const xmlParser = new XMLParser({
+  ignoreAttributes: false,
+  attributeNamePrefix: "@_",
+  removeNSPrefix: true,
+  trimValues: true,
+  parseTagValue: false,
+  parseAttributeValue: false,
+  processEntities: true,
+});
+
+type XmlObject = Record<string, unknown>;
+
+type ManifestItem = {
+  id: string;
+  href: string;
+  type: string;
+  properties: string;
+};
 
 const NAMED_ENTITIES: Record<string, string> = {
   amp: "&",
@@ -8,6 +34,9 @@ const NAMED_ENTITIES: Record<string, string> = {
   quot: '"',
   apos: "'",
   nbsp: " ",
+  ensp: " ",
+  emsp: " ",
+  thinsp: " ",
   hellip: "…",
   mdash: "—",
   ndash: "–",
@@ -16,7 +45,68 @@ const NAMED_ENTITIES: Record<string, string> = {
   lsquo: "‘",
   rsquo: "’",
   middot: "·",
+  bull: "•",
+  dagger: "†",
+  permil: "‰",
+  copy: "©",
+  reg: "®",
+  trade: "™",
+  deg: "°",
+  plusmn: "±",
+  times: "×",
+  divide: "÷",
+  frac12: "½",
+  frac14: "¼",
+  frac34: "¾",
+  sup2: "²",
+  sup3: "³",
+  micro: "µ",
+  para: "¶",
+  sect: "§",
+  laquo: "«",
+  raquo: "»",
+  cent: "¢",
+  pound: "£",
+  yen: "¥",
+  euro: "€",
+  larr: "←",
+  rarr: "→",
+  uarr: "↑",
+  darr: "↓",
+  harr: "↔",
 };
+
+function isObject(value: unknown): value is XmlObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** XML repeats a tag as an array only when it occurs more than once. */
+function nodes(value: unknown): Array<unknown> {
+  if (value === undefined || value === null) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+function textOf(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return String(value);
+  if (Array.isArray(value)) {
+    for (const part of value) {
+      const text = textOf(part);
+      if (text.trim().length > 0) return text;
+    }
+    return "";
+  }
+  if (isObject(value)) return textOf(value["#text"]);
+  return "";
+}
+
+function attribute(node: unknown, name: string): string | null {
+  if (!isObject(node)) return null;
+  const value = node[`@_${name}`];
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return String(value);
+  return null;
+}
 
 function decodeEntities(value: string) {
   return value.replace(
@@ -42,48 +132,26 @@ function stripTags(value: string) {
     .trim();
 }
 
-/** The readable text of one XHTML document, one paragraph per blank line. */
-function htmlToText(html: string) {
-  let text = html
-    .replace(/<head[\s\S]*?<\/head>/giu, "")
-    .replace(/<(script|style)[\s\S]*?<\/\1>/giu, "")
-    .replace(/<br\s*\/?>/giu, "\n")
-    .replace(
-      /<\/(?:p|div|h[1-6]|li|blockquote|section|article|tr|figcaption)>/giu,
-      "\n\n",
-    )
-    .replace(/<[^>]*>/gu, "");
-  text = decodeEntities(text)
-    .replace(/\r\n?/gu, "\n")
-    .replace(/[ \t]+\n/gu, "\n")
-    .replace(/\n{3,}/gu, "\n\n")
-    .trim();
-  return text;
+/** One normalized path inside the archive, so `./OEBPS/x` and `OEBPS/x` match. */
+function normalizePath(path: string) {
+  return path
+    .replace(/\\/gu, "/")
+    .replace(/^(?:\.\/)+/u, "")
+    .replace(/^\/+/u, "")
+    .replace(/\/+/gu, "/");
 }
 
-function chapterTitle(html: string) {
-  const heading = /<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>/iu.exec(html);
-  if (heading) {
-    const title = stripTags(heading[1]);
-    if (title.length > 0 && title.length <= 120) return title;
+function decodePath(path: string) {
+  try {
+    return normalizePath(decodeURIComponent(path));
+  } catch {
+    return path;
   }
-  const titleTag = /<title[^>]*>([\s\S]*?)<\/title>/iu.exec(html);
-  if (titleTag) {
-    const title = stripTags(titleTag[1]);
-    if (title.length > 0 && title.length <= 120) return title;
-  }
-  return "";
 }
 
 function resolveHref(baseDir: string, href: string) {
-  const clean = href.split("#")[0];
-  let decoded: string;
-  try {
-    decoded = decodeURIComponent(clean);
-  } catch {
-    decoded = clean;
-  }
-  const parts = `${baseDir}${decoded}`.split("/");
+  const clean = href.split(/[?#]/u)[0] ?? "";
+  const parts = `${baseDir}${decodePath(clean)}`.split("/");
   const resolved: Array<string> = [];
   for (const part of parts) {
     if (part === "" || part === ".") continue;
@@ -93,11 +161,186 @@ function resolveHref(baseDir: string, href: string) {
   return resolved.join("/");
 }
 
-function attribute(tag: string, name: string) {
-  const match = new RegExp(`\\b${name}\\s*=\\s*["']([^"']*)["']`, "iu").exec(
-    tag,
+function directoryOf(path: string) {
+  const index = path.lastIndexOf("/");
+  return index === -1 ? "" : path.slice(0, index + 1);
+}
+
+/** Looks an entry up literally, percent-decoded, then case-insensitively. */
+function archiveReader(files: Record<string, Uint8Array>) {
+  const exact = new Map<string, Uint8Array>();
+  const folded = new Map<string, string>();
+  for (const [name, bytes] of Object.entries(files)) {
+    const path = normalizePath(name);
+    exact.set(path, bytes);
+    exact.set(decodePath(path), bytes);
+    folded.set(path.toLowerCase(), path);
+  }
+  return (path: string) => {
+    const normalized = normalizePath(path);
+    const direct = exact.get(normalized) ?? exact.get(decodePath(normalized));
+    if (direct) return direct;
+    const real = folded.get(normalized.toLowerCase());
+    return real ? (exact.get(real) ?? null) : null;
+  };
+}
+
+function parseXml(source: string): XmlObject | null {
+  try {
+    const parsed: unknown = xmlParser.parse(source);
+    return isObject(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function packageNode(opf: XmlObject): XmlObject {
+  return isObject(opf.package) ? opf.package : opf;
+}
+
+function readManifest(pkg: XmlObject): Array<ManifestItem> {
+  const manifest = isObject(pkg.manifest) ? pkg.manifest : {};
+  const items: Array<ManifestItem> = [];
+  for (const node of nodes(manifest.item)) {
+    const id = attribute(node, "id");
+    const href = attribute(node, "href");
+    if (!id || !href) continue;
+    items.push({
+      id,
+      href,
+      type: attribute(node, "media-type") ?? "",
+      properties: attribute(node, "properties") ?? "",
+    });
+  }
+  return items;
+}
+
+function isReadingDocument(item: ManifestItem) {
+  return (
+    /xhtml|html|xml/iu.test(item.type) || /\.(?:x?html?|xht)$/iu.test(item.href)
   );
-  return match?.[1] ?? null;
+}
+
+function hasProperty(item: ManifestItem, name: string) {
+  return item.properties.split(/\s+/u).includes(name);
+}
+
+function collectNavTitles(
+  source: string,
+  baseDir: string,
+  titles: Map<string, string>,
+) {
+  const doc = parseXml(source);
+  if (!doc) return;
+  const html = isObject(doc.html) ? doc.html : doc;
+  const body = isObject(html.body) ? html.body : {};
+  const navs = nodes(body.nav);
+  const toc =
+    navs.find((nav) => attribute(nav, "type")?.split(/\s+/u).includes("toc")) ??
+    navs[0];
+
+  const walk = (value: unknown) => {
+    if (!isObject(value)) return;
+    for (const entry of nodes(value.li)) {
+      if (!isObject(entry)) continue;
+      const anchor = nodes(entry.a)[0];
+      const href = attribute(anchor, "href");
+      if (href) {
+        const title = stripTags(textOf(anchor));
+        const path = resolveHref(baseDir, href);
+        if (path && title && !titles.has(path)) titles.set(path, title);
+      }
+      walk(entry.ol);
+    }
+  };
+
+  if (isObject(toc)) walk(toc.ol);
+}
+
+function collectNcxTitles(
+  source: string,
+  baseDir: string,
+  titles: Map<string, string>,
+) {
+  const doc = parseXml(source);
+  if (!doc) return;
+  const ncx = isObject(doc.ncx) ? doc.ncx : doc;
+  const navMap = isObject(ncx.navMap) ? ncx.navMap : {};
+
+  const walk = (value: unknown) => {
+    for (const point of nodes(value)) {
+      if (!isObject(point)) continue;
+      const labelNode = isObject(point.navLabel)
+        ? point.navLabel
+        : nodes(point.navLabel)[0];
+      const src = attribute(point.content, "src");
+      if (src && isObject(labelNode)) {
+        const title = stripTags(textOf(labelNode.text));
+        const path = resolveHref(baseDir, src);
+        if (path && title && !titles.has(path)) titles.set(path, title);
+      }
+      walk(point.navPoint);
+    }
+  };
+
+  walk(navMap.navPoint);
+}
+
+/** The readable text of one XHTML document, one paragraph per blank line. */
+function htmlToText(html: string) {
+  let text = html
+    .replace(/<!--[\s\S]*?-->/gu, "")
+    .replace(/<head[\s\S]*?<\/head>/giu, "")
+    .replace(/<(script|style|noscript)[\s\S]*?<\/\1>/giu, "")
+    .replace(/<br\s*\/?>/giu, "\n")
+    .replace(/<hr\s*\/?>/giu, "\n\n")
+    .replace(
+      /<\/(?:p|div|h[1-6]|li|blockquote|section|article|aside|header|footer|nav|tr|td|th|figcaption|pre)>/giu,
+      "\n\n",
+    )
+    .replace(/<[^>]*>/gu, "");
+  text = decodeEntities(text)
+    .replace(/\r\n?/gu, "\n")
+    .replace(/[\u200b-\u200d\ufeff]/gu, "")
+    .replace(/\u00a0/gu, " ")
+    .replace(/[ \t\f\v]+/gu, " ");
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .join("\n")
+    .replace(/\n{3,}/gu, "\n\n")
+    .trim();
+}
+
+function headingTitle(source: string) {
+  const heading = /<(h[1-3])[^>]*>([\s\S]*?)<\/\1>/iu.exec(source);
+  if (heading?.[2]) {
+    const title = stripTags(heading[2]);
+    if (title.length > 0 && title.length <= 120) return title;
+  }
+  return "";
+}
+
+function titleTag(source: string) {
+  const match = /<title[^>]*>([\s\S]*?)<\/title>/iu.exec(source);
+  if (!match?.[1]) return "";
+  const title = stripTags(match[1]);
+  return title.length > 0 && title.length <= 120 ? title : "";
+}
+
+/**
+ * A single-document book (some converters wrap a whole novel in one XHTML)
+ * becomes chapters at its own top-level headings. Per-file books are left
+ * exactly as the spine states.
+ */
+function splitAtHeadings(source: string): Array<string> {
+  const matches = [...source.matchAll(/<h[12]\b[^>]*>/giu)];
+  if (matches.length < 3) return [];
+  return matches.map((match, index) => {
+    const start = match.index;
+    const end = matches[index + 1]?.index ?? source.length;
+    return source.slice(start, end);
+  });
 }
 
 function isEncrypted(encryptionXml: string) {
@@ -111,6 +354,26 @@ function isEncrypted(encryptionXml: string) {
   return false;
 }
 
+function findPackagePath(
+  containerXml: string,
+  archive: ReturnType<typeof archiveReader>,
+  files: Record<string, Uint8Array>,
+) {
+  const container = parseXml(containerXml);
+  const rootfiles = isObject(container?.container)
+    ? isObject(container.container.rootfiles)
+      ? container.container.rootfiles
+      : {}
+    : {};
+  for (const rootfile of nodes(rootfiles.rootfile)) {
+    const path = attribute(rootfile, "full-path");
+    if (path && archive(path)) return normalizePath(path);
+  }
+  // Some converters write a container that no parser accepts; any OPF works.
+  const fallback = Object.keys(files).find((name) => /\.opf$/iu.test(name));
+  return fallback ? normalizePath(fallback) : null;
+}
+
 /**
  * Reads an EPUB: the container names the OPF package, the package names the
  * reading order, and each document in that order contributes a chapter.
@@ -122,83 +385,104 @@ export function parseEpub(data: Uint8Array): ParsedNovel {
       filter: (file) =>
         file.name === "META-INF/container.xml" ||
         file.name === "META-INF/encryption.xml" ||
-        /\.(?:opf|xml|x?html?)$/iu.test(file.name),
+        /\.(?:opf|ncx|xml|xht|x?html?)$/iu.test(file.name),
     });
   } catch {
     throw new Error("The file is not a readable EPUB archive.");
   }
 
-  const container = files["META-INF/container.xml"];
-  if (!container) throw new Error("The EPUB has no container.xml.");
-
-  const containerXml = strFromU8(container);
-  const rootPath = attribute(
-    /<rootfile\b[^>]*>/iu.exec(containerXml)?.[0] ?? "",
-    "full-path",
+  const archive = archiveReader(files);
+  const container = archive("META-INF/container.xml");
+  const fallbackPackage = Object.keys(files).find((name) =>
+    /\.opf$/iu.test(name),
   );
-  if (!rootPath) throw new Error("The EPUB names no package document.");
+  const packagePath = container
+    ? findPackagePath(strFromU8(container), archive, files)
+    : fallbackPackage
+      ? normalizePath(fallbackPackage)
+      : null;
+  if (!packagePath) throw new Error("The EPUB names no package document.");
 
-  if (files["META-INF/encryption.xml"]) {
-    const encryptionXml = strFromU8(files["META-INF/encryption.xml"]);
-    if (isEncrypted(encryptionXml))
-      throw new Error("The EPUB is encrypted (DRM) and cannot be imported.");
+  const encryption = archive("META-INF/encryption.xml");
+  if (encryption && isEncrypted(strFromU8(encryption)))
+    throw new Error("The EPUB is encrypted (DRM) and cannot be imported.");
+
+  const opfBytes = archive(packagePath);
+  if (!opfBytes) throw new Error("The EPUB's package document is missing.");
+
+  const opfXml = strFromU8(opfBytes);
+  const opf = parseXml(opfXml);
+  if (!opf) throw new Error("The EPUB's package document is unreadable.");
+
+  const pkg = packageNode(opf);
+  const metadata = isObject(pkg.metadata) ? pkg.metadata : {};
+  const title = stripTags(textOf(metadata.title));
+  const author = stripTags(textOf(metadata.creator));
+
+  const baseDir = resolveHref(
+    directoryOf(packagePath),
+    attribute(pkg, "base") ?? "",
+  );
+  const normalizedBase = baseDir.length > 0 ? `${baseDir}/` : "";
+
+  const manifest = readManifest(pkg);
+  const byId = new Map(manifest.map((item) => [item.id, item]));
+  const titles = new Map<string, string>();
+
+  const navItem = manifest.find((item) => hasProperty(item, "nav"));
+  if (navItem) {
+    const bytes = archive(resolveHref(normalizedBase, navItem.href));
+    if (bytes) collectNavTitles(strFromU8(bytes), normalizedBase, titles);
   }
 
-  const opf = files[rootPath];
-  if (!opf) throw new Error("The EPUB's package document is missing.");
-  const opfXml = strFromU8(opf);
-  const baseDir = rootPath.includes("/")
-    ? rootPath.slice(0, rootPath.lastIndexOf("/") + 1)
-    : "";
-
-  const title = stripTags(
-    /<dc:title[^>]*>([\s\S]*?)<\/dc:title>/iu.exec(opfXml)?.[1] ?? "",
-  );
-  const author = stripTags(
-    /<dc:creator[^>]*>([\s\S]*?)<\/dc:creator>/iu.exec(opfXml)?.[1] ?? "",
-  );
-
-  const manifest = new Map<string, { href: string; type: string }>();
-  for (const tag of opfXml.match(/<item\b[^>]*\/?>/giu) ?? []) {
-    const id = attribute(tag, "id");
-    const href = attribute(tag, "href");
-    if (!id || !href) continue;
-    manifest.set(id, {
-      href: resolveHref(baseDir, href),
-      type: attribute(tag, "media-type") ?? "",
-    });
+  const spineNode = isObject(pkg.spine) ? pkg.spine : {};
+  const ncxItem =
+    byId.get(attribute(spineNode, "toc") ?? "") ??
+    manifest.find((item) => /dtbncx/iu.test(item.type));
+  if (ncxItem) {
+    const bytes = archive(resolveHref(normalizedBase, ncxItem.href));
+    if (bytes) collectNcxTitles(strFromU8(bytes), normalizedBase, titles);
   }
 
-  const spine: Array<string> = [];
-  for (const tag of opfXml.match(/<itemref\b[^>]*\/?>/giu) ?? []) {
-    const idref = attribute(tag, "idref");
-    const item = idref ? manifest.get(idref) : undefined;
-    if (item) spine.push(item.href);
-  }
+  const documents: Array<{ path: string; title: string }> = [];
+  const seen = new Set<string>();
+  const addDocument = (item: ManifestItem) => {
+    if (hasProperty(item, "nav")) return;
+    const path = resolveHref(normalizedBase, item.href);
+    if (!path || seen.has(path)) return;
+    seen.add(path);
+    documents.push({ path, title: titles.get(path) ?? "" });
+  };
 
-  const documents =
-    spine.length > 0
-      ? spine
-      : [...manifest.values()]
-          .filter((item) => /x?html|xml/iu.test(item.type))
-          .map((item) => item.href);
+  for (const ref of nodes(spineNode.itemref)) {
+    if (attribute(ref, "linear") === "no") continue;
+    const item = byId.get(attribute(ref, "idref") ?? "");
+    if (item && isReadingDocument(item)) addDocument(item);
+  }
+  if (documents.length === 0) {
+    for (const item of manifest) if (isReadingDocument(item)) addDocument(item);
+  }
 
   const chapters: Array<ParsedChapter> = [];
-  for (const path of documents) {
-    const file = files[path];
-    if (!file) continue;
-    const html = strFromU8(file);
-    const content = htmlToText(html);
-    if (content.length === 0) continue;
-    const chapter: ParsedChapter = { title: chapterTitle(html), content };
-    const previous = chapters.at(-1);
-    // A document that is only a few lines is usually the tail of the one
-    // before it (a title page, a split paragraph); keep the book readable.
-    if (previous && content.length < 140) {
-      previous.content = `${previous.content}\n\n${content}`.trim();
-      if (previous.title === "") previous.title = chapter.title;
-    } else {
-      chapters.push(chapter);
+  for (const document of documents) {
+    const bytes = archive(document.path);
+    if (!bytes) continue;
+    const source = strFromU8(bytes);
+    const pieces = documents.length === 1 ? splitAtHeadings(source) : [];
+
+    for (const piece of pieces.length > 0 ? pieces : [source]) {
+      const content = htmlToText(piece);
+      if (content.length === 0) continue;
+      const chapterTitle =
+        headingTitle(piece) || document.title || titleTag(piece);
+      const previous = chapters.at(-1);
+      // A document with neither heading nor enough text is usually the tail of
+      // the one before it; keep it there instead of as an empty chapter.
+      if (previous && content.length < 140 && chapterTitle === "") {
+        previous.content = `${previous.content}\n\n${content}`.trim();
+        continue;
+      }
+      chapters.push({ title: chapterTitle, content });
     }
   }
 

@@ -43,6 +43,8 @@ export const NovelsTable = sqliteTable(
   {
     id,
     title: text().notNull(),
+    /** The readable part of `/novels/{slug}`, made from the title. */
+    slug: text().notNull(),
     author: text().notNull().default(""),
     description: text().notNull().default(""),
     category: text(),
@@ -64,6 +66,7 @@ export const NovelsTable = sqliteTable(
     updatedAt,
   },
   (table) => [
+    uniqueIndex("novels_slug_idx").on(table.slug),
     index("novels_updated_idx").on(table.updatedAt, table.id),
     index("novels_category_idx").on(table.category, table.updatedAt),
     index("novels_status_idx").on(table.status, table.updatedAt),
@@ -231,34 +234,6 @@ export const NovelReadingDailyTable = sqliteTable(
   ],
 );
 
-/** A shelf tag, shared by every book. */
-export const NovelTagsTable = sqliteTable(
-  "novel_tags",
-  {
-    id,
-    name: text().notNull(),
-    slug: text().notNull(),
-    createdAt,
-  },
-  (table) => [uniqueIndex("novel_tags_slug_idx").on(table.slug)],
-);
-
-export const NovelTagLinksTable = sqliteTable(
-  "novel_tag_links",
-  {
-    novelId: integer("novel_id")
-      .notNull()
-      .references(() => NovelsTable.id, { onDelete: "cascade" }),
-    tagId: integer("tag_id")
-      .notNull()
-      .references(() => NovelTagsTable.id, { onDelete: "cascade" }),
-  },
-  (table) => [
-    primaryKey({ columns: [table.novelId, table.tagId] }),
-    index("novel_tag_links_tag_idx").on(table.tagId),
-  ],
-);
-
 export const NovelNoteLikesTable = sqliteTable(
   "novel_note_likes",
   {
@@ -368,7 +343,6 @@ export type NovelNote = typeof NovelNotesTable.$inferSelect;
 export type NovelSettings = typeof NovelSettingsTable.$inferSelect;
 export type NovelBookmark = typeof NovelBookmarksTable.$inferSelect;
 export type NovelReadingDaily = typeof NovelReadingDailyTable.$inferSelect;
-export type NovelTag = typeof NovelTagsTable.$inferSelect;
 export type NovelNoteReport = typeof NovelNoteReportsTable.$inferSelect;
 export type NovelNoteVote = typeof NovelNoteVotesTable.$inferSelect;
 export type NovelStatus = (typeof NOVEL_STATUSES)[number];
