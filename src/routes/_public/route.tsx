@@ -20,6 +20,7 @@ import { CACHE_CONTROL } from "@/lib/constants";
 import { useIsAdmin } from "@/features/moments/hooks/use-is-admin";
 import { momentsExistQuery } from "@/features/moments/queries";
 import { tagsQueryOptions } from "@/features/tags/queries";
+import { LazyToolbox } from "@/features/toolbox/components/lazy-toolbox";
 import { PublicShell } from "@/features/theme/components/public-shell";
 import { ThemePreviewBar } from "@/features/theme/components/theme-preview-bar";
 import { activeTheme } from "@/features/theme/theme-preview";
@@ -169,6 +170,7 @@ function PublicLayout() {
         <PasswordChangeBanner />
       ) : null}
       <PageViewTracker />
+      <LazyToolbox />
       <LazyToaster />
     </>
   );

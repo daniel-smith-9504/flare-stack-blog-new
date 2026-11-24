@@ -42,6 +42,7 @@ import { Route as AdminTaxonomyRouteImport } from './routes/admin/taxonomy'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as ApiAuthRouteImport } from './routes/api.auth'
 import { Route as ApiTrackRouteImport } from './routes/api.track'
+import { Route as ApiUapisRouteImport } from './routes/api.uapis'
 import { Route as ImagesSplatRouteImport } from './routes/images.$'
 import { Route as MomentsAtomDotxmlRouteImport } from './routes/moments.atom[.]xml'
 import { Route as MomentsFeedDotjsonRouteImport } from './routes/moments.feed[.]json'
@@ -241,6 +242,11 @@ const ApiAuthRoute = ApiAuthRouteImport.update({
 const ApiTrackRoute = ApiTrackRouteImport.update({
   id: '/api/track',
   path: '/api/track',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUapisRoute = ApiUapisRouteImport.update({
+  id: '/api/uapis',
+  path: '/api/uapis',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ImagesSplatRoute = ImagesSplatRouteImport.update({
@@ -469,6 +475,7 @@ export interface FileRoutesByFullPath {
   '/api/$': typeof ApiSplatRoute
   '/api/auth': typeof ApiAuthRouteWithChildren
   '/api/track': typeof ApiTrackRoute
+  '/api/uapis': typeof ApiUapisRoute
   '/images/$': typeof ImagesSplatRoute
   '/moments/atom.xml': typeof MomentsAtomDotxmlRoute
   '/moments/feed.json': typeof MomentsFeedDotjsonRoute
@@ -535,6 +542,7 @@ export interface FileRoutesByTo {
   '/api/$': typeof ApiSplatRoute
   '/api/auth': typeof ApiAuthRouteWithChildren
   '/api/track': typeof ApiTrackRoute
+  '/api/uapis': typeof ApiUapisRoute
   '/images/$': typeof ImagesSplatRoute
   '/moments/atom.xml': typeof MomentsAtomDotxmlRoute
   '/moments/feed.json': typeof MomentsFeedDotjsonRoute
@@ -606,6 +614,7 @@ export interface FileRoutesById {
   '/api/$': typeof ApiSplatRoute
   '/api/auth': typeof ApiAuthRouteWithChildren
   '/api/track': typeof ApiTrackRoute
+  '/api/uapis': typeof ApiUapisRoute
   '/images/$': typeof ImagesSplatRoute
   '/moments/atom.xml': typeof MomentsAtomDotxmlRoute
   '/moments/feed.json': typeof MomentsFeedDotjsonRoute
@@ -679,6 +688,7 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/api/auth'
     | '/api/track'
+    | '/api/uapis'
     | '/images/$'
     | '/moments/atom.xml'
     | '/moments/feed.json'
@@ -745,6 +755,7 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/api/auth'
     | '/api/track'
+    | '/api/uapis'
     | '/images/$'
     | '/moments/atom.xml'
     | '/moments/feed.json'
@@ -815,6 +826,7 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/api/auth'
     | '/api/track'
+    | '/api/uapis'
     | '/images/$'
     | '/moments/atom.xml'
     | '/moments/feed.json'
@@ -873,6 +885,7 @@ export interface RootRouteChildren {
   ApiSplatRoute: typeof ApiSplatRoute
   ApiAuthRoute: typeof ApiAuthRouteWithChildren
   ApiTrackRoute: typeof ApiTrackRoute
+  ApiUapisRoute: typeof ApiUapisRoute
   ImagesSplatRoute: typeof ImagesSplatRoute
   MomentsAtomDotxmlRoute: typeof MomentsAtomDotxmlRoute
   MomentsFeedDotjsonRoute: typeof MomentsFeedDotjsonRoute
@@ -1110,6 +1123,13 @@ declare module '@tanstack/react-router' {
       path: '/api/track'
       fullPath: '/api/track'
       preLoaderRoute: typeof ApiTrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/uapis': {
+      id: '/api/uapis'
+      path: '/api/uapis'
+      fullPath: '/api/uapis'
+      preLoaderRoute: typeof ApiUapisRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/images/$': {
@@ -1599,6 +1619,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSplatRoute: ApiSplatRoute,
   ApiAuthRoute: ApiAuthRouteWithChildren,
   ApiTrackRoute: ApiTrackRoute,
+  ApiUapisRoute: ApiUapisRoute,
   ImagesSplatRoute: ImagesSplatRoute,
   MomentsAtomDotxmlRoute: MomentsAtomDotxmlRoute,
   MomentsFeedDotjsonRoute: MomentsFeedDotjsonRoute,
