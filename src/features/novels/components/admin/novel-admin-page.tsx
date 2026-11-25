@@ -208,55 +208,64 @@ export function NovelAdminPage() {
       inset={false}
     >
       <div className="space-y-6">
-        <section className="fuwari-card-base flex flex-wrap items-center gap-2 p-3 text-sm">
-          <Link
-            to="/admin/novels/stats"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-black/5 px-3 py-1.5 dark:bg-white/10"
-          >
-            <BarChart3 size={15} />
-            {m.admin_novel_stats_title()}
-          </Link>
-          <Link
-            to="/admin/novels/notes"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-black/5 px-3 py-1.5 dark:bg-white/10"
-          >
-            <MessageSquareWarning size={15} />
-            {m.admin_novel_notes_title()}
-          </Link>
-          <Link
-            to="/admin/novels/mutes"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-black/5 px-3 py-1.5 dark:bg-white/10"
-          >
-            <UserX size={15} />
-            {m.admin_novel_mutes_title()}
-          </Link>
-          <span className="flex-1" />
-          <a
-            href="/novel-backup"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-black/5 px-3 py-1.5 dark:bg-white/10"
-          >
-            <Download size={15} />
-            {m.admin_novels_backup_export()}
-          </a>
-          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-black/5 px-3 py-1.5 dark:bg-white/10">
-            <FileUp size={15} />
-            {restoring
-              ? m.admin_novels_backup_restoring()
-              : m.admin_novels_backup_restore()}
-            <Input
-              type="file"
-              accept="application/json,.json"
-              disabled={restoring}
-              className="sr-only"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                event.target.value = "";
-                if (!file) return;
-                if (!window.confirm(m.admin_novels_backup_confirm())) return;
-                void restoreBackup(file);
-              }}
-            />
-          </label>
+        <section className="fuwari-card-base flex flex-col gap-2 p-3 text-sm sm:flex-row sm:items-center">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              to="/admin/novels/stats"
+              className={buttonClass({ variant: "regular", size: "sm" })}
+            >
+              <BarChart3 size={15} />
+              {m.admin_novel_stats_title()}
+            </Link>
+            <Link
+              to="/admin/novels/notes"
+              className={buttonClass({ variant: "regular", size: "sm" })}
+            >
+              <MessageSquareWarning size={15} />
+              {m.admin_novel_notes_title()}
+            </Link>
+            <Link
+              to="/admin/novels/mutes"
+              className={buttonClass({ variant: "regular", size: "sm" })}
+            >
+              <UserX size={15} />
+              {m.admin_novel_mutes_title()}
+            </Link>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+            <a
+              href="/novel-backup"
+              className={buttonClass({ variant: "regular", size: "sm" })}
+            >
+              <Download size={15} />
+              {m.admin_novels_backup_export()}
+            </a>
+            <label
+              className={buttonClass({
+                variant: "regular",
+                size: "sm",
+                className: "cursor-pointer",
+              })}
+            >
+              <FileUp size={15} />
+              {restoring
+                ? m.admin_novels_backup_restoring()
+                : m.admin_novels_backup_restore()}
+              <Input
+                type="file"
+                accept="application/json,.json"
+                disabled={restoring}
+                className="sr-only"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (!file) return;
+                  if (!window.confirm(m.admin_novels_backup_confirm())) return;
+                  void restoreBackup(file);
+                }}
+              />
+            </label>
+          </div>
         </section>
 
         <section className="fuwari-card-base p-4">
