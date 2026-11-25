@@ -79,7 +79,7 @@ export function NovelStatsPage() {
                       <div
                         key={day.day}
                         title={`${date} · ${m.admin_novel_stats_views()}: ${day.views} · ${m.admin_novel_stats_minutes()}: ${minutes(day.seconds)}`}
-                        className="flex-1 rounded-t bg-(--primary)/60 transition-colors hover:bg-(--primary)"
+                        className="flex-1 rounded-t bg-primary/60 transition-colors hover:bg-primary"
                         style={{
                           height: `${Math.max(2, (day.views / peak) * 100)}%`,
                         }}
