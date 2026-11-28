@@ -46,6 +46,35 @@ async function sendCode(email: string, ip = "203.0.113.1") {
   return code;
 }
 
+describe("password registration", () => {
+  it("stores the chosen password and leaves the address unverified", async () => {
+    spyOnQueue();
+    const context = createTestContext();
+    const auth = getAuth({ db: context.db, env });
+
+    const result = await auth.api.signUpEmail({
+      body: {
+        email: "new@example.com",
+        password: "reader-secret",
+        name: "Reader",
+      },
+    });
+
+    expect(result.user.emailVerified).toBe(false);
+    const [credential] = await context.db
+      .select({ password: account.password })
+      .from(account)
+      .where(eq(account.userId, result.user.id));
+    if (!credential?.password) throw new Error("No credential password");
+    expect(
+      await verifyPassword({
+        hash: credential.password,
+        password: "reader-secret",
+      }),
+    ).toBe(true);
+  });
+});
+
 describe("Sign-in Code", () => {
   it("enqueues an email carrying the code", async () => {
     const queueSend = spyOnQueue();
@@ -178,85 +207,6 @@ describe("password sign-in", () => {
     expect(res.headers.get("set-cookie")).toContain(
       "better-auth.session_token=",
     );
-  });
-});
-
-describe("passwords given at sign-up", () => {
-  it("gives the first User the Admin password and the next the default one", async () => {
-    const context = createTestContext();
-    const auth = getAuth({ db: context.db, env });
-
-    const adminOtp = await sendCode("admin@example.com");
-    await auth.api.signInEmailOTP({
-      body: { email: "admin@example.com", otp: adminOtp },
-    });
-    const readerOtp = await sendCode("reader@example.com");
-    await auth.api.signInEmailOTP({
-      body: { email: "reader@example.com", otp: readerOtp },
-    });
-
-    const admin = await auth.api.signInEmail({
-      body: { email: "admin@example.com", password: "Sure158644." },
-    });
-    expect(admin.user.role).toBe("admin");
-    expect(admin.user.mustChangePassword).toBe(false);
-
-    const reader = await auth.api.signInEmail({
-      body: { email: "reader@example.com", password: "123456" },
-    });
-    expect(reader.user.mustChangePassword).toBe(true);
-  });
-
-  it("ends the prompt once the password changes", async () => {
-    const context = createTestContext();
-    const auth = getAuth({ db: context.db, env });
-
-    const adminOtp = await sendCode("admin@example.com");
-    await auth.api.signInEmailOTP({
-      body: { email: "admin@example.com", otp: adminOtp },
-    });
-    const otp = await sendCode("reader@example.com");
-    await auth.api.signInEmailOTP({
-      body: { email: "reader@example.com", otp },
-    });
-    const { headers } = await auth.api.signInEmail({
-      body: { email: "reader@example.com", password: "123456" },
-      returnHeaders: true,
-    });
-    const cookie = headers
-      .getSetCookie()
-      .map((value) => value.split(";")[0])
-      .join("; ");
-
-    await auth.api.changePassword({
-      body: { currentPassword: "123456", newPassword: "reader-secret" },
-      headers: new Headers({ cookie }),
-    });
-
-    const [reader] = await context.db
-      .select({ mustChangePassword: user.mustChangePassword })
-      .from(user)
-      .where(eq(user.email, "reader@example.com"));
-    expect(reader?.mustChangePassword).toBe(false);
-
-    const [readerAccount] = await context.db
-      .select({ password: account.password })
-      .from(account)
-      .innerJoin(user, eq(account.userId, user.id))
-      .where(eq(user.email, "reader@example.com"));
-    if (!readerAccount?.password) throw new Error("No credential password");
-    expect(
-      await verifyPassword({
-        hash: readerAccount.password,
-        password: "reader-secret",
-      }),
-    ).toBe(true);
-    expect(
-      await verifyPassword({
-        hash: readerAccount.password,
-        password: "123456",
-      }),
-    ).toBe(false);
   });
 });
 

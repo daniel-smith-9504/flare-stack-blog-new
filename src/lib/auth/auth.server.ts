@@ -36,15 +36,9 @@ async function checkEmailRateLimit(
   return { allowed, retryAfterMs };
 }
 
-// Users sign in with GitHub or a Sign-in Code (ADR 0030): signing up,
-// resetting a password and verifying an address stay off, and so do the OTP
-// flows other than sign-in.
+// Users sign in with GitHub, a Sign-in Code or an email address and password;
+// the OTP flows other than sign-in stay off.
 const DISABLED_AUTH_PATHS = [
-  "/sign-up/email",
-  "/request-password-reset",
-  "/reset-password",
-  "/send-verification-email",
-  "/verify-email",
   "/email-otp/check-verification-otp",
   "/email-otp/verify-email",
   "/email-otp/request-password-reset",
@@ -76,8 +70,84 @@ export function getAuth({ db, env }: { db: DB; env: Env }) {
         clientSecret: GITHUB_CLIENT_SECRET,
       },
     },
+    emailAndPassword: {
+      enabled: true,
+      requireEmailVerification: true,
+      sendResetPassword: async ({ user, url }) => {
+        // Per-email limit: 5 reset links per hour; a refused send is skipped
+        // silently, as with every other auth email.
+        const limit = await checkEmailRateLimit("email-reset", user.email);
+        if (!limit.allowed) return;
+
+        const emailHtml = renderToStaticMarkup(
+          AuthEmail({
+            locale: LOCALE,
+            site: await getEmailSite(db),
+            type: "reset-password",
+            url,
+          }),
+        );
+
+        await env.QUEUE.send({
+          type: "EMAIL",
+          data: {
+            to: user.email,
+            subject: m.email_auth_reset_subject({}, { locale: LOCALE }),
+            html: emailHtml,
+          },
+        });
+      },
+    },
+    emailVerification: {
+      sendVerificationEmail: async ({ user, url }) => {
+        const limit = await checkEmailRateLimit("email-verify", user.email);
+        if (!limit.allowed) return;
+
+        const emailHtml = renderToStaticMarkup(
+          AuthEmail({
+            locale: LOCALE,
+            site: await getEmailSite(db),
+            type: "verification",
+            url,
+          }),
+        );
+
+        await env.QUEUE.send({
+          type: "EMAIL",
+          data: {
+            to: user.email,
+            subject: m.email_auth_verification_subject({}, { locale: LOCALE }),
+            html: emailHtml,
+          },
+        });
+      },
+      autoSignInAfterVerification: true,
+    },
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
+        if (ctx.path === "/sign-up/email") {
+          const email =
+            typeof ctx.body?.email === "string" ? ctx.body.email.trim() : "";
+          if (!email) return;
+
+          const limit = await checkEmailRateLimit("email-signup", email);
+          if (limit.allowed) return;
+
+          throw new APIError(
+            "TOO_MANY_REQUESTS",
+            {
+              code: "RATE_LIMITED",
+              message: "Too Many Requests",
+              retryAfterMs: limit.retryAfterMs,
+            },
+            {
+              "Retry-After": String(
+                Math.max(1, Math.ceil(limit.retryAfterMs / 1000)),
+              ),
+            },
+          );
+        }
+
         if (ctx.path === "/email-otp/send-verification-otp") {
           const email =
             typeof ctx.body?.email === "string" ? ctx.body.email.trim() : "";

@@ -1,9 +1,11 @@
-import { createFileRoute, useRouteContext } from "@tanstack/react-router";
-import { Turnstile, useTurnstile } from "@/components/common/turnstile";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { loginSearchSchema } from "@/features/auth/auth-search";
-import { LoginPage } from "@/features/auth/components/login-page";
-import { useLoginForm, useSocialLogin } from "@/features/auth/hooks";
 import { m } from "@/paraglide/messages";
+
+const LoginContent = lazyRouteComponent(
+  () => import("@/features/auth/components/auth-route-content"),
+  "LoginRouteContent",
+);
 
 export const Route = createFileRoute("/_public/_auth/login")({
   validateSearch: loginSearchSchema,
@@ -18,43 +20,6 @@ export const Route = createFileRoute("/_public/_auth/login")({
 });
 
 function RouteComponent() {
-  const { isEmailConfigured } = useRouteContext({ from: "/_public/_auth" });
-  const search = Route.useSearch();
-  const {
-    isPending: turnstilePending,
-    token: turnstileToken,
-    reset: resetTurnstile,
-    turnstileProps,
-  } = useTurnstile("login");
-
-  const resolvedRedirectTo = search.redirectTo;
-
-  const loginForm = useLoginForm({
-    turnstileToken,
-    resetTurnstile,
-    redirectTo: resolvedRedirectTo,
-    emailCodeEnabled: isEmailConfigured,
-  });
-
-  const socialLogin = useSocialLogin({
-    redirectTo: resolvedRedirectTo,
-  });
-
-  const turnstileElement = isEmailConfigured ? (
-    <div className="flex justify-center">
-      <Turnstile {...turnstileProps} />
-    </div>
-  ) : null;
-
-  return (
-    <LoginPage
-      isEmailConfigured={isEmailConfigured}
-      loginForm={{
-        ...loginForm,
-        turnstilePending,
-      }}
-      socialLogin={socialLogin}
-      turnstileElement={turnstileElement}
-    />
-  );
+  const { redirectTo } = Route.useSearch();
+  return <LoginContent redirectTo={redirectTo} />;
 }

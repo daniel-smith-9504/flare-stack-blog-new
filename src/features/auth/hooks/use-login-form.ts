@@ -9,9 +9,10 @@ import { resetAuthBoundQueries } from "@/features/auth/queries";
 import { usePreviousLocation } from "@/hooks/use-previous-location";
 import { getAuthClient } from "@/lib/auth/auth-client";
 import {
-  getPasswordAuthErrorMessage,
+  getLoginAuthErrorMessage,
   getRetryAfterMs,
   getSignInCodeAuthErrorMessage,
+  isEmailNotVerifiedError,
   isSignInCodeSpentError,
 } from "@/lib/auth/auth-errors";
 import { m } from "@/paraglide/messages";
@@ -66,6 +67,9 @@ export function useLoginForm(options: UseLoginFormOptions) {
   const [signedIn, setSignedIn] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // A password sign-in refused because the address behind it is unverified.
+  const [passwordUnverified, setPasswordUnverified] = useState(false);
+  const [resendFeedback, setResendFeedback] = useState<string | null>(null);
   const cooldown = useCooldown();
   const navigate = useNavigate();
   const previousLocation = usePreviousLocation();
@@ -186,16 +190,22 @@ export function useLoginForm(options: UseLoginFormOptions) {
 
   const onSubmitPassword = async (data: PasswordSchema) => {
     setError(null);
+    setEmail(data.email);
+    setPasswordUnverified(false);
+    setResendFeedback(null);
     try {
       const { data: result, error: signInError } =
         await getAuthClient().signIn.email({
           email: data.email,
           password: data.password,
+          fetchOptions: {
+            headers: { "X-Turnstile-Token": turnstileToken || "" },
+          },
         });
       if (signInError) {
+        setPasswordUnverified(isEmailNotVerifiedError(signInError));
         setError(
-          getPasswordAuthErrorMessage(signInError) ??
-            m.auth_error_default_desc(),
+          getLoginAuthErrorMessage(signInError) ?? m.auth_error_default_desc(),
         );
         return;
       }
@@ -209,9 +219,37 @@ export function useLoginForm(options: UseLoginFormOptions) {
     } catch {
       setError(m.auth_error_default_desc());
       return;
+    } finally {
+      resetTurnstile();
     }
 
     finish();
+  };
+
+  /** Sends the verification link again to the address that just signed in. */
+  const resendVerification = async () => {
+    if (!email || isResending) return;
+    setIsResending(true);
+    setResendFeedback(null);
+    try {
+      const { error: sendError } = await getAuthClient().sendVerificationEmail({
+        email,
+        callbackURL: `${window.location.origin}/verify-email`,
+        fetchOptions: {
+          headers: { "X-Turnstile-Token": turnstileToken || "" },
+        },
+      });
+      setResendFeedback(
+        sendError
+          ? (getLoginAuthErrorMessage(sendError) ?? m.auth_error_default_desc())
+          : m.login_toast_check_inbox(),
+      );
+    } catch {
+      setResendFeedback(m.login_toast_send_failed());
+    } finally {
+      resetTurnstile();
+      setIsResending(false);
+    }
   };
 
   const resend = async () => {
@@ -239,8 +277,13 @@ export function useLoginForm(options: UseLoginFormOptions) {
     method,
     selectMethod: (next: LoginMethod) => {
       setError(null);
+      setPasswordUnverified(false);
+      setResendFeedback(null);
       setMethod(next);
     },
+    passwordUnverified,
+    resendFeedback,
+    resendVerification,
     email,
     error,
     signedIn,

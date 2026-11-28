@@ -1,15 +1,13 @@
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
-import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "@/lib/toast";
 import { z } from "zod";
-import { markPasswordChanged } from "@/features/auth/queries";
 import { getAuthClient } from "@/lib/auth/auth-client";
 import { getProfileAuthErrorMessage } from "@/lib/auth/auth-errors";
 import { m } from "@/paraglide/messages";
 
-const MIN_PASSWORD_LENGTH = 6;
+const MIN_PASSWORD_LENGTH = 8;
 
 const createPasswordSchema = () =>
   z
@@ -29,14 +27,8 @@ const createPasswordSchema = () =>
 
 type PasswordSchema = z.infer<ReturnType<typeof createPasswordSchema>>;
 
-/**
- * The signed-in User's own password change. The server ends the default
- * password's prompt in the same request; the session cache is told so here
- * instead of being looked up again, since its cookie cache would still say
- * otherwise.
- */
+/** The signed-in User's own password change. */
 export function useChangePassword() {
-  const queryClient = useQueryClient();
   const [feedback, setFeedback] = useState<{
     error: boolean;
     message: string;
@@ -51,6 +43,7 @@ export function useChangePassword() {
       const { error } = await getAuthClient().changePassword({
         currentPassword: data.currentPassword,
         newPassword: data.newPassword,
+        revokeOtherSessions: true,
       });
       if (error) {
         setFeedback({
@@ -61,7 +54,6 @@ export function useChangePassword() {
         return;
       }
       form.reset();
-      markPasswordChanged(queryClient);
       setFeedback({ error: false, message: m.password_change_success() });
       toast.success(m.password_change_success());
     } catch {

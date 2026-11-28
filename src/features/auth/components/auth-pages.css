@@ -101,6 +101,44 @@
   justify-content: space-between;
   gap: 16px;
 }
+.auth-field-link {
+  color: var(--theme-accent, var(--fuwari-primary));
+  font-size: 12px;
+  padding-block: 4px;
+}
+.auth-note {
+  color: var(--fuwari-fg-50);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.auth-register {
+  border-top: 1px solid
+    var(--theme-rule, color-mix(in srgb, var(--fuwari-fg-50) 20%, transparent));
+  padding-top: 20px;
+  text-align: center;
+  color: var(--fuwari-fg-50);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.auth-register a {
+  color: var(--theme-accent, var(--fuwari-primary));
+}
+.auth-status {
+  padding-top: 8px;
+  text-align: center;
+}
+.auth-status-actions {
+  display: grid;
+  gap: 16px;
+}
+.auth-status-link,
+.auth-feedback a {
+  color: var(--theme-accent, var(--fuwari-primary));
+  font-size: 14px;
+}
+.auth-status .auth-heading p {
+  overflow-wrap: anywhere;
+}
 .name-gate {
   padding: 28px 32px 32px;
 }

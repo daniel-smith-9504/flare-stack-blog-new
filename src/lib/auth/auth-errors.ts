@@ -11,6 +11,8 @@ type CustomAuthErrorCode = (typeof CUSTOM_AUTH_ERROR_CODES)[number];
 
 const COMMON_AUTH_ERROR_CODES = [
   "USER_NOT_FOUND",
+  "USER_ALREADY_EXISTS",
+  "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL",
   "SESSION_EXPIRED",
   "INVALID_OTP",
   "OTP_EXPIRED",
@@ -18,6 +20,9 @@ const COMMON_AUTH_ERROR_CODES = [
   "INVALID_EMAIL_OR_PASSWORD",
   "INVALID_PASSWORD",
   "PASSWORD_TOO_SHORT",
+  "INVALID_TOKEN",
+  "CREDENTIAL_ACCOUNT_NOT_FOUND",
+  "EMAIL_NOT_VERIFIED",
 ] as const satisfies ReadonlyArray<BetterAuthErrorCode>;
 
 type CommonAuthErrorCode = (typeof COMMON_AUTH_ERROR_CODES)[number];
@@ -92,7 +97,50 @@ function getSharedAuthErrorMessage(
       return m.auth_error_invalid_password();
     case "PASSWORD_TOO_SHORT":
       return m.password_validation_too_short();
+    case "USER_ALREADY_EXISTS":
+    case "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL":
+      return m.auth_error_user_already_exists();
+    case "INVALID_TOKEN":
+      return m.auth_error_invalid_token();
+    case "CREDENTIAL_ACCOUNT_NOT_FOUND":
+      return m.auth_error_credential_not_found();
+    case "EMAIL_NOT_VERIFIED":
+      return m.login_error_email_not_verified();
   }
+}
+
+/** The password was right, but the address behind it is not verified yet. */
+export function isEmailNotVerifiedError(
+  error: AuthClientErrorLike | null | undefined,
+) {
+  return getErrorCode(error) === "EMAIL_NOT_VERIFIED";
+}
+
+export function getLoginAuthErrorMessage(
+  error: AuthClientErrorLike | null | undefined,
+): string | undefined {
+  if (isEmailNotVerifiedError(error)) {
+    return m.login_error_email_not_verified();
+  }
+  return getSharedAuthErrorMessage(error);
+}
+
+export function getRegisterAuthErrorMessage(
+  error: AuthClientErrorLike | null | undefined,
+): string | undefined {
+  return getSharedAuthErrorMessage(error);
+}
+
+export function getForgotPasswordAuthErrorMessage(
+  error: AuthClientErrorLike | null | undefined,
+): string | undefined {
+  return getSharedAuthErrorMessage(error);
+}
+
+export function getResetPasswordAuthErrorMessage(
+  error: AuthClientErrorLike | null | undefined,
+): string | undefined {
+  return getSharedAuthErrorMessage(error);
 }
 
 /** The code can no longer be used, so the user has to request a new one. */

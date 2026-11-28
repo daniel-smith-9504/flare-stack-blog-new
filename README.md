@@ -77,7 +77,7 @@ Flare Stack Blog 是一个深度拥抱 Cloudflare 生态的开源独立博客系
   - **异步队列事件解耦**：通知邮件发送与 Webhook 派发经由 Cloudflare Queues 异步队列处理，接口响应零阻塞。
 
 - 🛠️ **系统与扩展能力**
-  - **安全身份认证**：集成 Better Auth，支持 GitHub OAuth 快捷登录，以及发送到邮箱的 6 位登录码（无密码；需在后台配置邮件发送后启用）。
+  - **安全身份认证**：集成 Better Auth，支持邮箱注册与密码登录、邮箱验证、找回密码，以及 GitHub OAuth 和发送到邮箱的 6 位登录码（后两者与邮件注册需在后台配置邮件发送后启用）。
   - **通知推送**：新评论、回复和友链申请可推送到 Telegram、Discord、飞书、钉钉、企业微信、Bark、ntfy，或带签名的通用 JSON 与自定义模板，详见 [Webhook 推送](docs/webhook.md)。
   - **开放 API 接口与 Agent Skill**：支持在后台签发 API Key，通过规范化 OpenAPI / oRPC 接口对接第三方自动化工具或发布脚本；博客自带 Agent Skill，AI agent 凭配对码接入后可撰写、上传图片并发布文章。
   - **访问分析与 SEO**：内建站内访问统计（PV / UV、来源、地区、设备）与文章热度自动同步，无需任何第三方统计服务，开箱支持 Canonical、Schema.org、RSS / Atom / JSON Feed、Sitemap 与 Robots 标准。

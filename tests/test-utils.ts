@@ -37,7 +37,6 @@ export function createMockSession(
     banReason: null,
     banExpires: null,
     mutedAt: null,
-    mustChangePassword: false,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

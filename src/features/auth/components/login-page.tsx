@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Check, CircleAlert } from "lucide-react";
 import { type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,9 @@ export function LoginPage({
     isResending,
     resendSecondsLeft,
     turnstilePending,
+    passwordUnverified,
+    resendFeedback,
+    resendVerification,
   } = loginForm;
   const busy = isSubmitting || signedIn || socialLogin.isLoading || isResending;
   const passwordMode = step === "email" && method === "password";
@@ -154,6 +158,11 @@ export function LoginPage({
                   label={m.login_password_label()}
                   error={loginForm.passwordForm.errors.password?.message}
                   required
+                  action={
+                    <Link to="/forgot-password" className="auth-field-link">
+                      {m.login_forgot_password_fuwari()}
+                    </Link>
+                  }
                 >
                   <PasswordInput
                     {...loginForm.passwordForm.register("password")}
@@ -166,11 +175,33 @@ export function LoginPage({
             </>
           )}
           {error && (
-            <Callout tone="danger" icon={CircleAlert} role="alert">
+            <Callout
+              tone="danger"
+              icon={CircleAlert}
+              role="alert"
+              action={
+                passwordMode && passwordUnverified ? (
+                  <Button
+                    variant="text"
+                    size="sm"
+                    onClick={resendVerification}
+                    disabled={busy || turnstilePending}
+                    loading={isResending}
+                  >
+                    {m.login_resend_verification()}
+                  </Button>
+                ) : null
+              }
+            >
               {error}
             </Callout>
           )}
-          {!passwordMode && (
+          {resendFeedback && (
+            <p className="auth-note" role="status">
+              {resendFeedback}
+            </p>
+          )}
+          {step === "email" && (
             <div className="auth-verification">{turnstileElement}</div>
           )}
           {passwordMode ? (
@@ -241,6 +272,12 @@ export function LoginPage({
             </>
           )}
         </form>
+      )}
+      {step === "email" && isEmailConfigured && (
+        <footer className="auth-register">
+          {m.login_no_account()}{" "}
+          <Link to="/register">{m.login_email_register()}</Link>
+        </footer>
       )}
     </div>
   );

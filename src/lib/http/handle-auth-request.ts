@@ -3,9 +3,12 @@ import { getDb } from "@/lib/db";
 import { enforceIpRateLimit } from "./rate-limit";
 import { enforceTurnstile } from "./turnstile";
 
-// Sending a Sign-in Code emails anyone, so it also needs a human.
+// Paths that create an account or send an email need a human.
 const TURNSTILE_PROTECTED_PATHS = new Set([
   "/api/auth/email-otp/send-verification-otp",
+  "/api/auth/sign-up/email",
+  "/api/auth/request-password-reset",
+  "/api/auth/send-verification-email",
 ]);
 
 // Entering a code, or a password, gets a tighter hourly budget than the other

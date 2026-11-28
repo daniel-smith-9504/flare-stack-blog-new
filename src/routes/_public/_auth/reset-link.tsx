@@ -1,10 +1,34 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { legacyAuthSearchSchema } from "@/features/auth/auth-search";
+import {
+  createFileRoute,
+  lazyRouteComponent,
+  redirect,
+} from "@tanstack/react-router";
+import { resetPasswordSearchSchema } from "@/features/auth/auth-search";
+import { m } from "@/paraglide/messages";
 
-// Passwords are gone, so this old entry point leads to the one sign-in page.
+const ResetPasswordContent = lazyRouteComponent(
+  () => import("@/features/auth/components/auth-route-content"),
+  "ResetPasswordRouteContent",
+);
+
 export const Route = createFileRoute("/_public/_auth/reset-link")({
-  validateSearch: legacyAuthSearchSchema,
-  beforeLoad: ({ search }) => {
-    throw redirect({ to: "/login", search: { redirectTo: search.redirectTo } });
+  validateSearch: resetPasswordSearchSchema,
+  beforeLoad: ({ context }) => {
+    if (!context.isEmailConfigured) {
+      throw redirect({ to: "/login" });
+    }
   },
+  component: RouteComponent,
+  head: () => ({
+    meta: [
+      {
+        title: m.reset_password_title(),
+      },
+    ],
+  }),
 });
+
+function RouteComponent() {
+  const { token, error } = Route.useSearch();
+  return <ResetPasswordContent token={token} error={error} />;
+}

@@ -1,6 +1,6 @@
 # Sign in without passwords
 
-Superseded by [ADR 0040](./0040-passwords-return-beside-codes.md).
+Superseded by [ADR 0041](./0041-passwords-return-as-self-service.md).
 
 A User signs in with GitHub or with a Sign-in Code emailed to them; password sign-in, registration, password reset and password change are removed, and a migration deletes the stored password hashes. Readers found registering with a password too much friction to leave a comment, and few remember a password for a blog they rarely visit. We lowered that friction instead of adding guest comments, because Comments stay public immediately (ADR 0010) and Muting binds to a User (ADR 0017), both of which rely on every Comment having a verified email behind it.
 

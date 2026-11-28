@@ -1,10 +1,34 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { legacyAuthSearchSchema } from "@/features/auth/auth-search";
+import {
+  createFileRoute,
+  lazyRouteComponent,
+  redirect,
+} from "@tanstack/react-router";
+import { verifyEmailSearchSchema } from "@/features/auth/auth-search";
+import { m } from "@/paraglide/messages";
 
-// Verification links in old emails still land here; sign-in is by code now.
+const VerifyEmailContent = lazyRouteComponent(
+  () => import("@/features/auth/components/auth-route-content"),
+  "VerifyEmailRouteContent",
+);
+
 export const Route = createFileRoute("/_public/_auth/verify-email")({
-  validateSearch: legacyAuthSearchSchema,
-  beforeLoad: ({ search }) => {
-    throw redirect({ to: "/login", search: { redirectTo: search.redirectTo } });
+  validateSearch: verifyEmailSearchSchema,
+  beforeLoad: ({ context }) => {
+    if (!context.isEmailConfigured) {
+      throw redirect({ to: "/login" });
+    }
   },
+  component: RouteComponent,
+  head: () => ({
+    meta: [
+      {
+        title: m.verify_email_title(),
+      },
+    ],
+  }),
 });
+
+function RouteComponent() {
+  const { error } = Route.useSearch();
+  return <VerifyEmailContent error={error} />;
+}

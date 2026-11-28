@@ -11,7 +11,6 @@ import type { NavOption } from "@/components/layout/layout-props";
 import { customNavOptions } from "@/components/layout/nav-options";
 import { LazyToaster } from "@/components/layout/lazy-toaster";
 import { NameGate } from "@/features/auth/components/name-gate";
-import { PasswordChangeBanner } from "@/features/auth/components/password-change-banner";
 import { PageViewTracker } from "@/features/analytics/components/page-view-tracker";
 import { categoriesQueryOptions } from "@/features/categories/queries";
 import { useLogout } from "@/features/auth/hooks/use-logout";
@@ -85,7 +84,6 @@ function PublicLayout() {
   const hasPreviewParams = useLocation({
     select: (location) => searchHasThemePreview(location.search),
   });
-  const pathname = useLocation({ select: (location) => location.pathname });
   // Inside an Admin page's preview panel the bar is redundant, and its link
   // would take the frame out of the preview.
   const embedded = useLocation({
@@ -166,9 +164,6 @@ function PublicLayout() {
         <ThemePreviewBar themeName={theme.name()} onExit={exitPreview} />
       ) : null}
       <NameGate user={session?.user} logout={logout} />
-      {session?.user?.mustChangePassword && pathname !== "/profile" ? (
-        <PasswordChangeBanner />
-      ) : null}
       <PageViewTracker />
       <LazyToolbox />
       <LazyToaster />

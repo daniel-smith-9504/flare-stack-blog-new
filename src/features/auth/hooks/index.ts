@@ -1,5 +1,9 @@
 export { useChangePassword } from "./use-change-password";
+export { useForgotPasswordForm } from "./use-forgot-password-form";
 export { useLoginForm } from "./use-login-form";
+export { useRegisterForm } from "./use-register-form";
+export { useResetPasswordForm } from "./use-reset-password-form";
+export { useVerifyEmail } from "./use-verify-email";
 export { useLogout } from "./use-logout";
 export { useNotificationToggle } from "./use-notification-toggle";
 export { useProfileForm } from "./use-profile-form";
