@@ -22,20 +22,7 @@ export function createAuthConfig() {
           required: false,
           input: false,
         },
-        mustChangePassword: {
-          type: "boolean",
-          required: true,
-          input: false,
-          defaultValue: false,
-        },
       },
-    },
-    // Password sign-in sits beside GitHub and the Sign-in Code (ADR 0040).
-    // Signing up, resetting a forgotten password and verifying an address stay
-    // off; `auth.server.ts` disables those paths.
-    emailAndPassword: {
-      enabled: true,
-      minPasswordLength: 6,
     },
     plugins: [
       admin(),

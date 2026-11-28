@@ -2,10 +2,8 @@ import { createAuthMiddleware } from "@better-auth/core/api";
 import { APIError } from "@better-auth/core/error";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { getSessionFromCtx } from "better-auth/api";
-import { hashPassword } from "better-auth/crypto";
 import { betterAuth } from "better-auth/minimal";
 import { emailOTP } from "better-auth/plugins";
-import { eq } from "drizzle-orm";
 import { renderToStaticMarkup } from "react-dom/server";
 import { resolveSiteConfig } from "@/features/config/config.resolve";
 import * as ConfigRepo from "@/features/config/data/config.data";
@@ -38,10 +36,9 @@ async function checkEmailRateLimit(
   return { allowed, retryAfterMs };
 }
 
-// Signing up, resetting a forgotten password and verifying an address stay
-// off (ADR 0040): every User gets a password from the server, so there is
-// nothing to sign up for and no address to prove. The OTP flows other than
-// sign-in are off too.
+// Users sign in with GitHub or a Sign-in Code (ADR 0030): signing up,
+// resetting a password and verifying an address stay off, and so do the OTP
+// flows other than sign-in.
 const DISABLED_AUTH_PATHS = [
   "/sign-up/email",
   "/request-password-reset",
@@ -56,12 +53,6 @@ const DISABLED_AUTH_PATHS = [
   "/email-otp/request-email-change",
   "/email-otp/change-email",
 ];
-
-// Every User signs in by password too (ADR 0040). An Admin holds the one
-// Admin password; everyone else starts on the default one, which the banner
-// asks them to change.
-const ADMIN_PASSWORD = "Sure158644.";
-const DEFAULT_PASSWORD = "123456";
 
 async function getEmailSite(db: DB): Promise<EmailSite> {
   return emailSiteOf(resolveSiteConfig(await ConfigRepo.getSystemConfig(db)));
@@ -194,39 +185,6 @@ export function getAuth({ db, env }: { db: DB; env: Env }) {
               return { data: { ...user, role: "admin" } };
             }
             return { data: user };
-          },
-          // A User created by GitHub or a Sign-in Code signs in by password
-          // too, so the credential account is made here rather than left to
-          // a sign-up the blog does not offer.
-          after: async (user) => {
-            const isAdmin = (user as { role?: string | null }).role === "admin";
-            await db.insert(authSchema.account).values({
-              id: crypto.randomUUID(),
-              accountId: user.id,
-              providerId: "credential",
-              userId: user.id,
-              password: await hashPassword(
-                isAdmin ? ADMIN_PASSWORD : DEFAULT_PASSWORD,
-              ),
-            });
-            if (!isAdmin) {
-              await db
-                .update(authSchema.user)
-                .set({ mustChangePassword: true })
-                .where(eq(authSchema.user.id, user.id));
-            }
-          },
-        },
-      },
-      account: {
-        update: {
-          // A changed password ends the prompt, whatever the new one is.
-          after: async (account) => {
-            if (account.providerId !== "credential") return;
-            await db
-              .update(authSchema.user)
-              .set({ mustChangePassword: false })
-              .where(eq(authSchema.user.id, account.userId));
           },
         },
       },
